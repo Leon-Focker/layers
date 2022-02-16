@@ -25,6 +25,13 @@
 		    (2 4)
 		    (3 .2))))
 
+(defparameter *structure2*
+  (make-structure '(2)
+		  '((1 ((2 2)))
+		    (2 ((1 1))))
+		  '((1 1)
+		    (2 1))))
+
 ;;; define each layer:
 
 (defparameter *layer1* (make-layer '1 *whispers* *structure1* 0 45))

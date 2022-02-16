@@ -449,15 +449,31 @@
 		    (2 4)
 		    (3 .2))))
 
+(defparameter *structure2*
+  (scale-biggest-value-to
+   (make-structure '(1)
+		   '((1 ((1 2 3 1 2 2 4 3)))
+		     (2 ((2 1 4 2)))
+		     (3 ((1 2 2 3 1)))
+		     (4 ((2 1 3))))
+		   `((1 ,(/ 3 2))
+		     (2 1)
+		     (3 1)
+		     (4 1))
+		   :id "rhythmen"
+		   :type 'compartmentalise
+		   :smallest 0.05)
+   0.25))
+
 ;; * layers
 
 ;;; define each layer:
 
-(defparameter *layer1* (make-layer '1 *accents* *structure1* 0 45 nil))
-(defparameter *layer2* (make-layer '2 *accents* *structure1* 1 45 nil))
-(defparameter *layer3* (make-layer '3 *accents* *structure1* 0 45))
-(defparameter *layer4* (make-layer '4 *transformations* *structure1* 4 0))
-(defparameter *layer5* (make-layer '5 *transformations* *structure1* 3 90))
+(defparameter *layer1* (make-layer '1 *accents* *structure2* 0 45 nil))
+(defparameter *layer2* (make-layer '2 *accents* *structure2* 1 45 nil))
+(defparameter *layer3* (make-layer '3 *accents* *structure2* 0 45))
+(defparameter *layer4* (make-layer '4 *transformations* *structure2* 3 0))
+(defparameter *layer5* (make-layer '5 *transformations* *structure2* 2 90))
 
 ;;;define layers-object:
 

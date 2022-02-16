@@ -96,7 +96,7 @@
 			      (+ index 1)
 			      (+ sum (car ls1)))))))
     (helper (sc::rescale chooser 0 1 0 (loop for i in ls sum i))
-	    ls 0 (car ls))))
+	    (cdr ls) 0 (car ls))))
 
 ;; *** remove-nth
 ;;; remove nth element from list
@@ -348,8 +348,8 @@
 ;; *** scale-structure
 ;;; scale all values in the recursive structure to wanted length.
 ;;; returns flattened list
-(defun scale-structure (structure target-sum)
-  (let* ((ls (sc::flatten structure))
+(defun scale-structure (ls target-sum)
+  (let* ((ls (sc::flatten ls))
 	 (sum-ls (loop for i in ls sum i)))
     (loop for i in ls collect
 	 (rescale i 0 sum-ls 0 target-sum))))
@@ -559,10 +559,12 @@
 ;;; total-length: length of the structure (and piece) in seconds
 ;;; the higher the n, the lower the recursion
 (defun make-structure (seed rules ratios
-		       &key (duration *total-length*)
+		       &key id
+			    (duration *total-length*)
 		            (type 'lindenmayer)
 		            (smallest *max-smallest-sample-length*))
   (make-instance 'structure
+		 :id id
 		 :data (funcall type duration seed rules ratios smallest)
 		 :seed seed
 		 :rules rules
@@ -597,6 +599,20 @@
   (make-instance 'length-list
 		 :data (nth n (data st))
 		 :structure st))
+
+;; *** get-next-by-time
+;;; don't just get the next value in the list,first see which list to choose (n)
+;;; then go by current time
+(defmethod get-next-by-time (current-time (ll length-list))
+  (when (data ll)
+    (let* ((data (data ll)))
+      (progn
+	(setf (current ll)
+	      (decider (mod (/ current-time *total-length*) 1.0) data))
+	(when (= (current ll) (length data))
+	  (setf (current ll) 0))
+	;;(format t "~&index: ~a~&current: ~a" (current ll) current-time)
+	(nth (current ll) data)))))
 
 ;; *** visualize-structure
 ;;; use the sketch library to visualize the structure. bit crooked
@@ -825,6 +841,7 @@
 		      :initarg :n-for-length-list :type integer)
    (length-list :accessor length-list :initarg :length-list :initform nil)
    (play :accessor play :initarg :play :initform t)
+   (current-time :accessor current-time :initarg :current-time :initform 0)
    (panorama :accessor panorama :initarg :panorama :initform 45)
    (use-pan-of-layer :accessor use-pan-of-layer :initarg :use-pan-of-layer
 		     :initform t)))
@@ -952,7 +969,9 @@
 (defmethod get-next ((ly layer))
   (let ((next-len (see-next (length-list ly))))
     (setf (last-stored-file ly)
-	  (current-stored-file ly))
+	  (current-stored-file ly)
+	  (current-time ly)
+	  (+ (current-time ly) (this-length ly)))
     ;; change sample-bank (sfl) of current layer depending on the
     ;; length of the next played soundfile (see-next)
     (cond ((< next-len (length-min (stored-file-list ly)))
@@ -987,15 +1006,16 @@
       (error "~&No markov-list found in current-stored-file ~a in Layer~a"
 	     (get-id (current-stored-file ly)) (get-id ly)))
     ;; make the playback stop when the structure has ended (and *loop* is nil)
-    (let ((lo (length-list ly)))
-      (when (and (= (current lo) (1- (length (data lo)))) (not *loop*))
+    (let ((ll (length-list ly)))
+      (when (and (= (current ll) (1- (length (data ll)))) (not *loop*))
 	(setf (play ly) nil)))
     ;; set time for the next sample and then actually determine the new sample
     (setf
      (this-length ly)
-     (get-next (length-list ly))
+     (get-next-by-time (current-time ly) (length-list ly))
      (current-stored-file ly)
-     (determine-new-stored-file ly))))
+     (determine-new-stored-file ly)
+     )))
 
 ;; *** update-slots
 ;;; updates the slots of a layer, when needed
@@ -1020,7 +1040,11 @@
 ;; *** play-this
 ;;; sends list with all necessary information to pd, tsouo play
 ;;; the current stored-file
-(defmethod play-this ((ly layer) &key (printing t) (output-for-unix nil))
+(defmethod play-this ((ly layer) &key
+				   (printing t)
+				   (output-for-unix nil)
+				   (change-sampler t)
+				   (get-next t))
   (if (and (play ly) *start-stop*)
       (prog1
 	  (list
@@ -1032,17 +1056,20 @@
 	       (string-replace "/E/"
 			       "E:/"
 			       (path (current-stored-file ly)))
-	       (path (current-stored-file ly)))
+	       (path (if get-next (current-stored-file ly)
+			 (last-stored-file ly))))
 	   ;; soundfile-length in seconds
 	   (this-length ly)
 	   ;; start in seconds
-	   (if (eq (start (current-stored-file ly)) 'random)
+	   (mod
+	    (if (eq (start (current-stored-file ly)) 'random)
 	       (if (> (duration (current-stored-file ly)) (this-length ly))
 		   (random (- (duration (current-stored-file ly)) (this-length ly)))
 		   0)
 	       (start (current-stored-file ly)))
+	    (duration (current-stored-file ly)))
 	   ;; attack in milliseconds
-	   100
+	   10
 	   ;; decay in miliseconds
 	   (* 1000 ;; from seconds to miliseconds
 	      (let ((max-decay (see-next (length-list ly)))
@@ -1056,21 +1083,30 @@
 	   (if (loop-flag (current-stored-file ly))
 	       1 0)
 	   ;; soundfile-id (displayed in PD)
-	   (get-id-current-file ly)
+	   (if get-next
+	       (get-id-current-file ly)
+	       (get-id-last-file ly))
 	   ;; panning
 	   (if (use-pan-of-layer ly)
 	       (panorama ly)
 	       (if (eq (panorama (current-stored-file ly)) 'random)
 		   (* 90 (get-next *random-number*))
-		   (panorama (current-stored-file ly)))))
+		   (panorama (current-stored-file ly))))
+	   ;; change sampler or use same as last?
+	   (if change-sampler 1 0))
 	
 	(when printing (print-layer ly))
-	(get-next ly))
+	(when get-next (get-next ly)))
       (progn
 	(setf (play ly) t)
 	(format t "~&Playback for layer ~a ends now, last sound was ~a seconds"
 		(get-id ly)
 		(this-length ly)))))
+
+;; *** update-length-list
+(defmethod update-length-list ((ly layer))
+  (setf (length-list ly)
+	(make-length-list (structure ly) (n-for-length-list ly))))
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** layers
@@ -1111,15 +1147,44 @@
 
 ;; *** play-layer
 ;;; play a layer from a layers-object
-(defmethod play-layer (layer-id (lys layers))
-  (let* ((ly))
-    (loop for layer in (data lys) do
-	 (when (eq layer-id (get-id layer))
-	   (setf ly layer)))
+(defmethod play-layer (layer-id (lys layers) current-time)
+  (let* ((ly (loop for layer in (data lys) do
+		  (when (eq layer-id (get-id layer))
+		    (return layer)))))
     (if ly
-	(play-this ly)
+	(progn ;;(setf (current-time ly) current-time)
+	  (play-this ly))
 	(error "~&there is no Layer with ID ~a in layers ~a"
 	       layer-id (get-id lys)))))
+
+;; *** set-n
+;;; change the n-for-length-list value even while playing
+(defmethod set-n (n layer-id (lys layers) current-time)
+  (let* ((ly (loop for layer in (data lys) do
+		  (when (eq layer-id (get-id layer))
+		    (return layer))))
+	 (ls (nth n (data (structure ly))))
+	 (len (length ls))
+	 (last-trigger (loop for n from 0 and i = (nth (mod n len) ls)
+			  until (> sum (/ current-time 100))
+			  finally (return (- sum i))
+			  sum i into sum))
+	 (new-len (- (this-length ly)
+		     (- (/ current-time 100)
+			last-trigger)))
+	 (st (start (current-stored-file ly))))
+    (prog2
+	(progn (setf (n-for-length-list ly) n)
+	       (update-length-list ly)
+	       (setf (this-length ly) new-len)
+	       #|(setf (start (current-stored-file ly))
+		     (+ (if (numberp (start (current-stored-file ly)))
+			    (start (current-stored-file ly))
+			    0)
+			play-time))|#)
+	(play-this ly :printing t :change-sampler t :get-next t)
+      ;;(setf (start (current-stored-file ly)) st)
+      (format t "~&n for Layer ~a has been set to ~a" layer-id n))))
 
 ;; *** reset-layers
 ;;; resets everything to the start of the piece and re-read structure
@@ -1136,7 +1201,8 @@
     (loop for layer in (data layers-object) do
 	 (update-layer layer)
 	 (reset-index layer)
-	 (setf (play layer) t)))
+	 (setf (play layer) t)
+	 (setf (current-time layer) 0)))
   (format t "~&Layers have been reset"))
 
 ;; *** get-ids

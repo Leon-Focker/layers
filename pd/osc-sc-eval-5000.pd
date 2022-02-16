@@ -1,4 +1,4 @@
-#N canvas 537 269 477 426 10;
+#N canvas 2035 160 477 426 10;
 #X obj 13 163 mrpeach/udpsend;
 #X obj 13 138 mrpeach/packOSC;
 #X obj 12 216 mrpeach/unpackOSC;
@@ -149,7 +149,7 @@ the zexy and mrpeach libraries.;
 #X restore 12 260 pd s2l;
 #X obj 12 192 mrpeach/udpreceive 5000;
 #X obj 50 47 r send-to-sc;
-#X msg 276 136 connect 192.168.56.104 5000;
+#X msg 276 136 connect 192.168.56.101 5000;
 #X connect 1 0 0 0;
 #X connect 2 0 14 0;
 #X connect 3 0 4 0;
