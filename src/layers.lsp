@@ -1,9 +1,8 @@
-#|(defpackage :layers
+  #|(defpackage :layers
   (:use :cl))
 (in-package :layers)|#
 (in-package :sc)
 (auto-set-default-dir)
-(load-from-same-dir "export-with-clm.lsp")
 
 ;;;; To do:
 ;;;; check reset (?) - layer-objects are updated - layers-ojects are not
@@ -18,6 +17,10 @@
 ;;;; one-time-use of samples? (eg. sample can only be played once every 3 mins)
 ;;;; dynamic panning
 ;;;; abstract the structure functions
+;;;; reseting should reset n of a layer as well
+;;;; set-n looks for the layer in layers by id. abstract that function and
+;;;; build in an error case (not found)
+;;;; when markov-chain has no weight there is no error message
 
 ;; * Layers
 #|||||||||||||||||||||||||||||||||||#
@@ -39,10 +42,15 @@
 ;; when false, each file is panned according to its panorama value
 (defparameter *use-pan-of-layer* t)
 (defparameter *use-preferred-lengths* t)
+(defparameter *score-file* *load-pathname*)
+(defparameter *load-risky-files* nil)
+(defparameter *debug* '())
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** utilities
 #|||||||||||||||||||||||||||||||||||#
+
+(when *load-risky-files* (load-from-same-dir "export-with-clm.lsp"))
 
 ;; *** start-osc
 ;;; simple function to open the osc-call
@@ -135,7 +143,8 @@
 		      &key
 			velocity-list
 			(tempo 60)
-			(name "test.mid"))
+			(name "test.mid")
+			dir)
   (when (or (null pitch-list) (null duration-list))
     (error "please provide at least one value in the pitch and the duration ~
             lists in lists-to-midi"))
@@ -162,10 +171,10 @@
     (event-list-to-midi-file
      events
      :start-tempo tempo
-     :midi-file (format nil "~a~a~a" *default-dir* "/" name))))
+     :midi-file (format nil "~a~a~a" (or dir *default-dir*) "/" name))))
 
 ;; *** structure-to-midi
-(defun structure-to-midi (structure &optional n)
+(defun structure-to-midi (structure &key n dir)
   (let* ((rhythm-blocks (data structure))
 	 (len (- (length rhythm-blocks) 1))
 	 (pitches (if n
@@ -182,6 +191,7 @@
 			(nth n rhythm-blocks)
 			(loop for i below len append (nth i rhythm-blocks)))))
     (lists-to-midi pitches durations start-times
+		   :dir (or dir *default-dir*)
 		   :name (if n
 			     (format nil "~a~a~a~a~a" "structure-"
 				     (id structure) "-n-" n ".mid")
@@ -248,7 +258,7 @@
 ;; *** list-object
 ;;; just a very basic list object with basic methods
 (defclass list-object (base-object)
-  ((current :accessor current :type integer :initform 0)))
+  ((current :accessor current :initarg :current :type integer :initform 0)))
 
 ;; *** get-ids
 ;;; get the ids of all elements in the list
@@ -257,7 +267,7 @@
 
 ;; *** get-current
 ;;; get current element of list
-(defmethod get-current ((lo list-object))
+(defmethod see-current ((lo list-object))
   (when (data lo)
     (nth (current lo) (data lo))))
 
@@ -530,18 +540,18 @@
 	 (scaler (/ new-smallest-value minimum)))
     (setf (data structure)
 	  (loop for ls in data collect
-	       (if (atom ls) (* ls scaler)
+	       (if (atom ls) (* ls scaler 1.0)
 		   (loop for i in ls collect (* i scaler)))))
     structure))
 
 ;; *** scale-biggest-value-to
 (defun scale-biggest-value-to (structure new-smallest-value)
   (let* ((data (data structure))
-	 (maximum (apply #'min (first data)))
+	 (maximum (apply #'max (first data)))
 	 (scaler (/ new-smallest-value maximum)))
     (setf (data structure)
 	  (loop for ls in data collect
-	       (if (atom ls) (* ls scaler)
+	       (if (atom ls) (* ls scaler 1.0)
 		   (loop for i in ls collect (* i scaler)))))
     structure))
     
@@ -595,14 +605,15 @@
 
 ;; *** make-length-list
 ;;; initialize a length-list object
-(defmethod make-length-list ((st structure) &optional (n 0))
+(defmethod make-length-list ((st structure) &optional (n 0) (current 0))
   (make-instance 'length-list
 		 :data (nth n (data st))
-		 :structure st))
+		 :structure st
+		 :current current))
 
 ;; *** get-next-by-time
-;;; don't just get the next value in the list,first see which list to choose (n)
-;;; then go by current time
+;;; don't just get the next value in the list, use decider and the current time
+;;; then go by current time use 
 (defmethod get-next-by-time (current-time (ll length-list))
   (when (data ll)
     (let* ((data (data ll)))
@@ -616,9 +627,10 @@
 
 ;; *** visualize-structure
 ;;; use the sketch library to visualize the structure. bit crooked
- (load-from-same-dir "show-structure.lsp")
- (defmethod visualize-structure ((st structure))
-   (show-structure::show-structure (reverse (cdr (reverse (data st))))))
+(when *load-risky-files*
+  (load-from-same-dir "show-structure.lsp")
+  (defmethod visualize-structure ((st structure))
+    (show-structure::show-structure (reverse (cdr (reverse (data st)))))))
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** soundfiles
@@ -836,6 +848,7 @@
    (last-stored-file :accessor last-stored-file
 		     :initarg :last-stored-file :initform nil)
    (this-length :accessor this-length :initarg :this-length :initform 1)
+   (last-length :accessor last-length :initarg :last-length :initform 1)
    (structure :accessor structure :initarg :structure)
    (n-for-length-list :accessor n-for-length-list
 		      :initarg :n-for-length-list :type integer)
@@ -1011,6 +1024,8 @@
 	(setf (play ly) nil)))
     ;; set time for the next sample and then actually determine the new sample
     (setf
+     (last-length ly)
+     (this-length ly)
      (this-length ly)
      (get-next-by-time (current-time ly) (length-list ly))
      (current-stored-file ly)
@@ -1028,7 +1043,7 @@
 	(length-list ly)
 	(make-length-list (structure ly) (n-for-length-list ly))
 	(this-length ly)
-	(get-current (length-list ly))))
+	(see-current (length-list ly))))
 
 ;; *** reset-index
 ;;; sets current slot of the length-list of a layer back to 0 (start of loop)
@@ -1048,6 +1063,7 @@
   (if (and (play ly) *start-stop*)
       (prog1
 	  (list
+	   'trigger
 	   ;; layer id (which voice in PD to send to)
 	   (get-id ly)
 	   ;; soundfile
@@ -1104,9 +1120,9 @@
 		(this-length ly)))))
 
 ;; *** update-length-list
-(defmethod update-length-list ((ly layer))
+(defmethod update-length-list ((ly layer) &optional (current 0))
   (setf (length-list ly)
-	(make-length-list (structure ly) (n-for-length-list ly))))
+	(make-length-list (structure ly) (n-for-length-list ly) current)))
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** layers
@@ -1147,13 +1163,12 @@
 
 ;; *** play-layer
 ;;; play a layer from a layers-object
-(defmethod play-layer (layer-id (lys layers) current-time)
+(defmethod play-layer (layer-id (lys layers))
   (let* ((ly (loop for layer in (data lys) do
 		  (when (eq layer-id (get-id layer))
 		    (return layer)))))
     (if ly
-	(progn ;;(setf (current-time ly) current-time)
-	  (play-this ly))
+        (play-this ly)
 	(error "~&there is no Layer with ID ~a in layers ~a"
 	       layer-id (get-id lys)))))
 
@@ -1163,28 +1178,41 @@
   (let* ((ly (loop for layer in (data lys) do
 		  (when (eq layer-id (get-id layer))
 		    (return layer))))
-	 (ls (nth n (data (structure ly))))
+	 ;; check and see if n is too big, then choose list
+	 (ls (progn (when (>= n (length (data (structure ly))))
+		      (progn (warn "~&n ~a is too big for structure of layer ~a"
+				   n layer-id)
+			     (setf n (- (length (data (structure ly))) 1))))
+		    (nth n (data (structure ly)))))
 	 (len (length ls))
-	 (last-trigger (loop for n from 0 and i = (nth (mod n len) ls)
-			  until (> sum (/ current-time 100))
-			  finally (return (- sum i))
-			  sum i into sum))
-	 (new-len (- (this-length ly)
-		     (- (/ current-time 100)
-			last-trigger)))
-	 (st (start (current-stored-file ly))))
-    (prog2
-	(progn (setf (n-for-length-list ly) n)
-	       (update-length-list ly)
-	       (setf (this-length ly) new-len)
-	       #|(setf (start (current-stored-file ly))
-		     (+ (if (numberp (start (current-stored-file ly)))
-			    (start (current-stored-file ly))
-			    0)
-			play-time))|#)
-	(play-this ly :printing t :change-sampler t :get-next t)
-      ;;(setf (start (current-stored-file ly)) st)
-      (format t "~&n for Layer ~a has been set to ~a" layer-id n))))
+	 (current 0) ;; current for new length-list
+	 (new-next-trigger (loop for n from 0 and i = (nth (mod n len) ls)
+			  sum i into sum
+			  until (> sum current-time)
+			  finally (progn (setf current (mod (- n 1) len))
+					 (return sum))))
+	 (old-next-trigger (current-time ly)))
+    ;; when resetting n, we need to tell lisp and the layer that we reset n:
+    (setf (n-for-length-list ly) n)
+    ;; setting "current" should be obsolete, since the next length
+    ;; will be chosen by using the current-time anyways. but for good measure:
+    (update-length-list ly current)
+    ;; function get-next sets current time of layer to the time
+    ;; when the next sample will be triggered. (old-next-trigger)
+    ;; reset to new-next-trigger
+    (setf (current-time ly)
+	  new-next-trigger
+	  ;; reset this-length (for next sample)
+	  (this-length ly)
+	  (get-next-by-time (current-time ly) (length-list ly))
+	  ;; maybe we don't want this here? choose soundfile again...
+	  (current-stored-file ly)
+	  (determine-new-stored-file ly))    
+    ;; information what has happened:
+    (format t "~&n for Layer ~a has been set to ~a" layer-id n)
+    ;; finally tell PD what to do:
+    ;; !!!!!!! the decay of the currently playing sound could be too long
+    (list 'set-n layer-id (- new-next-trigger old-next-trigger))))
 
 ;; *** reset-layers
 ;;; resets everything to the start of the piece and re-read structure
@@ -1193,17 +1221,66 @@
   (setf (data *random-number*) *seed*)	; reset *random-number*
   (unless layers-object (setf layers-object *layers*))
   (let ((sts '()))
+    ;; re generate structures
     (loop for layer in (data layers-object) do
 	 (unless (member (structure layer) sts)
 	   (push (structure layer) sts)))
     (loop for st in sts do
 	 (re-gen-structure st))
+    ;; update each layer, reset some init values
     (loop for layer in (data layers-object) do
 	 (update-layer layer)
 	 (reset-index layer)
 	 (setf (play layer) t)
 	 (setf (current-time layer) 0)))
   (format t "~&Layers have been reset"))
+
+;; old code, not working. kept for now:
+#|(defmethod set-n (n layer-id (lys layers) current-time sample-run-time)
+  (let* ((ly (loop for layer in (data lys) do
+		  (when (eq layer-id (get-id layer))
+		    (return layer))))
+	 ;; check and see if n is too big, then choose list
+	 (ls (progn (when (>= n (length (data (structure ly))))
+		      (progn (warn "~&n ~a is too big for structure of layer ~a"
+				   n layer-id)
+			     (setf n (- (length (data (structure ly)) 1)))))
+		    (nth n (data (structure ly)))))
+	 (st (start (current-stored-file ly)))
+	 (len (length ls))
+	 (current 0) ;; current for new length-list
+	 (last-trigger (loop for n from 0 and i = (nth (mod n len) ls)
+			  sum i into sum
+			  until (> sum current-time)
+			  finally (progn (setf current (mod (- n 1) len))
+					 (return (- sum i))))))
+    (prog2
+	(progn (setf (n-for-length-list ly) n)
+	       (update-length-list ly current)
+	       (setf (this-length ly) (see-current (length-list ly)))
+	       (setf (this-length ly)
+		     (- (this-length ly)
+			(- current-time
+			   last-trigger)))
+	       ;; to neatlessly transition we need to know how long the sample
+	       ;; has been playing yet (sample-run-time) and set that as a start value now:
+	       (setf (start (current-stored-file ly))
+		     (+ (if (numberp (start (current-stored-file ly)))
+			    (start (current-stored-file ly))
+			    0)
+			sample-run-time)))
+	(play-this ly :get-next nil :change-sampler nil)
+      (setf (start (current-stored-file ly)) st)
+      ;; also there needs to be a way to shut of the other sample layer
+      ;; (smooth the sound even when a new one is triggered and the old one hasn't faded yet)
+      ;; implemented, check if working
+(format t "~&n for Layer ~a has been set to ~a" layer-id n))))|#
+
+;; *** reload-layers
+;;; even better than a reset. reloads everything
+(defun reload-layers ()
+  (load *score-file*)
+  nil)
 
 ;; *** get-ids
 ;;; get ids of all stored-files in stored-file-list
@@ -1214,3 +1291,9 @@
 ;;; examples:
 
 (defparameter *layer1* (make-layer '1 *stored-file-list* *structure* 0))
+
+;; * finished!
+
+(format t "~&finished loading!")
+
+
