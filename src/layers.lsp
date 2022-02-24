@@ -6,7 +6,6 @@
 
 ;;;; To do:
 ;;;; check reset (?) - layer-objects are updated - layers-ojects are not
-;;;; start values don't work properly
 ;;;; variable rest probability multiplier?
 ;;;; create template
 ;;;; change probabilities depending on Formteil
@@ -16,11 +15,14 @@
 ;;;; build "sets" for songs, smoothly switch between sets, live transistions
 ;;;; one-time-use of samples? (eg. sample can only be played once every 3 mins)
 ;;;; dynamic panning
-;;;; abstract the structure functions
 ;;;; reseting should reset n of a layer as well
 ;;;; set-n looks for the layer in layers by id. abstract that function and
 ;;;; build in an error case (not found)
 ;;;; when markov-chain has no weight there is no error message
+;;;; when changing n of a layer whilst playing (set-n). each time a slight delay
+;;;; is added to the layer (something aroung 20 ms). Probably happens in PD. where?
+;;;; PD needs to be restarted after every reload. else some timings seem to be
+;;;; getting stuck. pls fix :c
 
 ;; * Layers
 #|||||||||||||||||||||||||||||||||||#
@@ -30,7 +32,7 @@
 (defparameter *total-length* 300)
 (defparameter *seed* 5)
 (defparameter *random-number* nil)
-(defparameter *pd-on-windows* t)
+(defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
 (defparameter *default-dir* (parent-dir
 			     (parent-dir (get-sc-config 'default-dir))))
 (defparameter *default-sample-dir* (format nil "~a~a" *default-dir* "/samples"))
@@ -42,9 +44,9 @@
 ;; when false, each file is panned according to its panorama value
 (defparameter *use-pan-of-layer* t)
 (defparameter *use-preferred-lengths* t)
-(defparameter *score-file* *load-pathname*)
-(defparameter *load-risky-files* nil)
-(defparameter *debug* '())
+(defparameter *score-file* *load-pathname*) ;; set which file to reload to reset
+(defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
+(defparameter *debug* '()) ;; hopefully not needed for now
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** utilities
@@ -956,18 +958,22 @@
 	       (if (and (> (this-length ly) (first (preferred-length snd)))
 			(< (this-length ly) (second (preferred-length snd))))
 		   (return snd)
-		   ;; get a file that wants to be played
+		   ;; if not, get a file that wants to be played
 		   (let ((ls '()))
 		     (loop for snd1 in data do
 			  (if (preferred-length snd1)
+			      ;; check whether file likes the current length
 			      (when (and (> (this-length ly)
 					    (first (preferred-length snd1)))
 					 (< (this-length ly)
 					    (second (preferred-length snd1))))
 				(push snd1 ls))
+			      ;; if it has ne preferrences, add it as well
 			      (push snd1 ls)))
 		     (if (null ls)
+			 ;; when nobody wants to be played, play original one
 			 (return snd)
+			 ;; else choose at random :o
 			 (return (nth (floor (* (get-next *random-number*)
 						(length ls)))
 				      ls)))))
@@ -1214,27 +1220,6 @@
     ;; !!!!!!! the decay of the currently playing sound could be too long
     (list 'set-n layer-id (- new-next-trigger old-next-trigger))))
 
-;; *** reset-layers
-;;; resets everything to the start of the piece and re-read structure
-(defun reset-layers (&optional layers-object)
-  (declare (special *layers*))
-  (setf (data *random-number*) *seed*)	; reset *random-number*
-  (unless layers-object (setf layers-object *layers*))
-  (let ((sts '()))
-    ;; re generate structures
-    (loop for layer in (data layers-object) do
-	 (unless (member (structure layer) sts)
-	   (push (structure layer) sts)))
-    (loop for st in sts do
-	 (re-gen-structure st))
-    ;; update each layer, reset some init values
-    (loop for layer in (data layers-object) do
-	 (update-layer layer)
-	 (reset-index layer)
-	 (setf (play layer) t)
-	 (setf (current-time layer) 0)))
-  (format t "~&Layers have been reset"))
-
 ;; old code, not working. kept for now:
 #|(defmethod set-n (n layer-id (lys layers) current-time sample-run-time)
   (let* ((ly (loop for layer in (data lys) do
@@ -1275,6 +1260,27 @@
       ;; (smooth the sound even when a new one is triggered and the old one hasn't faded yet)
       ;; implemented, check if working
 (format t "~&n for Layer ~a has been set to ~a" layer-id n))))|#
+
+;; *** reset-layers
+;;; resets everything to the start of the piece and re-read structure
+(defun reset-layers (&optional layers-object)
+  (declare (special *layers*))
+  (setf (data *random-number*) *seed*)	; reset *random-number*
+  (unless layers-object (setf layers-object *layers*))
+  (let ((sts '()))
+    ;; re-generate structures
+    (loop for layer in (data layers-object) do
+	 (unless (member (structure layer) sts)
+	   (push (structure layer) sts)))
+    (loop for st in sts do
+	 (re-gen-structure st))
+    ;; update each layer, reset some init values
+    (loop for layer in (data layers-object) do
+	 (update-layer layer)
+	 (reset-index layer)
+	 (setf (play layer) t)
+	 (setf (current-time layer) 0)))
+  (format t "~&Layers have been reset"))
 
 ;; *** reload-layers
 ;;; even better than a reset. reloads everything
