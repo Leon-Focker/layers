@@ -23,29 +23,36 @@
 ;;;; is added to the layer (something aroung 20 ms). Probably happens in PD. where?
 ;;;; PD needs to be restarted after every reload. else some timings seem to be
 ;;;; getting stuck. pls fix :c
+;;;; changing position in coordinate space in Pd, needs function that slowly adjusts
+;;;; position (moving average?) as to not jump to a new position
 
 ;; * Layers
 #|||||||||||||||||||||||||||||||||||#
 ;; ** global parameters
 #|||||||||||||||||||||||||||||||||||#
 
+;; *** custom setup (front end)
 (defparameter *total-length* 300)
 (defparameter *seed* 5)
-(defparameter *random-number* nil)
-(defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
-(defparameter *default-dir* (parent-dir
-			     (parent-dir (get-sc-config 'default-dir))))
-(defparameter *default-sample-dir* (format nil "~a~a" *default-dir* "/samples"))
 ;; what is the maximum length for the smallest value in the structure?
 (defparameter *max-smallest-sample-length* 0.003)
-(defparameter *loop* nil)
-(defparameter *start-stop* t)
+(defparameter *use-sample-clouds* t) ;; skips markov chains, uses x y z
 ;; when true, the layer decides the panorama value for all files played in it
 ;; when false, each file is panned according to its panorama value
 (defparameter *use-pan-of-layer* t)
-(defparameter *use-preferred-lengths* t)
-(defparameter *score-file* *load-pathname*) ;; set which file to reload to reset
+(defparameter *use-preferred-lengths* t) ; check wheter sf likes current length
+(defparameter *loop* nil)
+(defparameter *start-stop* t)
+(defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
 (defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
+
+;; *** not for user (back end)
+(defparameter *random-number* nil)
+(defparameter *default-dir* (parent-dir
+			     (parent-dir (get-sc-config 'default-dir))))
+(defparameter *default-sample-dir* (format nil "~a~a" *default-dir* "/samples"))
+(defparameter *x-y-z-position* (vector 0 0 0))
+(defparameter *score-file* *load-pathname*) ;; set which file to reload to reset
 (defparameter *debug* '()) ;; hopefully not needed for now
 
 #|||||||||||||||||||||||||||||||||||#
@@ -93,6 +100,22 @@
 (defun set-total-length (len)
   (setf *total-length* len)
   (format t "~& *total-length* has been set to ~a" *total-length*))
+
+;; *** set-use-sample-clouds
+;;; sets the global *total-length* variable to value in seconds
+(defun set-use-sample-clouds (val)
+  (cond ((= val 0) (setf *use-sample-clouds* nil))
+	((= val 1) (setf *use-sample-clouds* t))
+	(t (error "~&set-use-sample-clouds got value ~a~
+                     but needs either a 0 or 1"
+		  val)))
+  (format t "~& *use-sample-clouds* has been set to ~a" *use-sample-clouds*))
+
+;; *** set-x-y-z
+;;; sets the global *total-length* variable to value in seconds
+(defun set-x-y-z (x y z)
+  (setf *x-y-z-position* (vector x y z))
+  (format t "~& *x-y-z-position* has been set to ~a" *x-y-z-position*))
 
 ;; *** decider
 ;;; gets (random) value as chooser between 0 and 1 and a list
@@ -199,6 +222,15 @@
 				     (id structure) "-n-" n ".mid")
 			     (format nil "~a~a~a" "structure-"
 				     (id structure) ".mid")))))
+
+;; *** distance-between-points
+;;; distance between two points p1 and p2,
+;;; both need to be vectors with the same length
+(defun distance-between-points (p1 p2)
+  (unless (and (vectorp p1) (vectorp p2) (= (length p1) (length p2)))
+    (error "~&both arguments need to be same-length vectors in function~
+             distance-between-points, ~%args: ~a ~a" p1 p2))
+  (sqrt (loop for q across p1 and p across p2 sum (expt (- q p) 2.0))))
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** base-object
@@ -632,7 +664,7 @@
 (when *load-risky-files*
   (load-from-same-dir "show-structure.lsp")
   (defmethod visualize-structure ((st structure))
-    (show-structure::show-structure (reverse (cdr (reverse (data st)))))))
+    (show-structure (reverse (cdr (reverse (data st)))))))
 
 #|||||||||||||||||||||||||||||||||||#
 ;; ** soundfiles
@@ -657,18 +689,27 @@
    (amplitude :accessor amplitude :initarg :amplitude :initform 1)
    (loop-flag :accessor loop-flag :initarg :loop-flag :initform nil)
    (decay :accessor decay :initarg :decay :initform 0)
-   (panorama :accessor panorama :initarg :panorama :initform 45)))
+   (panorama :accessor panorama :initarg :panorama :initform 45)
+   ;; position in a 3d coordinate space - can also be used to get next file
+   (x :accessor x :initarg :x :initform 0.5)
+   (y :accessor y :initarg :y :initform 0.5)
+   (z :accessor z :initarg :z :initform 0.5)))
 
 ;; *** make-stored-file
 ;;; create an instance of stored-file and config with markov-list etc.
-(defun make-stored-file (id path-from-default-dir markov-list decay
+(defun make-stored-file (id path-from-default-dir
 			 &key
+			   markov
+			   (decay 100)
 			   (directory *default-sample-dir*)
 			   (start 0)
 			   (amplitude 1)
 			   (panorama 45)
 			   (loop-flag nil)
-			   (preferred-length nil))
+			   (preferred-length nil)
+			   (x 0.5)
+			   (y 0.5)
+			   (z 0.5))
   (let* ((path (format nil "~a~a" directory path-from-default-dir)))
     (unless (probe-file path)
       (warn "~&the file with path ~a does not exist" path))
@@ -677,13 +718,18 @@
 		 :name (pathname-name path-from-default-dir)
 		 :path path
 		 :decay decay ; in seconds
-		 :markov-list (make-markov-list nil markov-list)
+		 :markov-list (make-markov-list nil (if markov
+							markov
+							`((,id 1))))
 		 :duration (soundfile-duration path)
 		 :start start
 		 :amplitude amplitude
 		 :panorama panorama
 		 :loop-flag loop-flag
-		 :preferred-length preferred-length)))
+		 :preferred-length preferred-length
+		 :x x
+		 :y y
+		 :z z)))
 
 ;; *** setf-markov
 ;;; sets the markov list of a stored-file
@@ -694,12 +740,12 @@
 (make-stored-file
  'noisy1
  "/rhythmic/noisy/1.wav"
- '((noisy1 1)
-   (noisy2 1)
-   (noisy3 1)
-   (noisy4 1)
-   (noisy5 1))
- 0)
+ :markov '((noisy1 1)
+	   (noisy2 1)
+	   (noisy3 1)
+	   (noisy4 1)
+	   (noisy5 1))
+ :decay 0)
 
 ;; *** stored-file-list
 ;;; list of stored files, no doubles
@@ -726,15 +772,68 @@
 		 :sfl-when-shorter sfl-when-shorter
 		 :sfl-when-longer sfl-when-longer))
 
-;; *** create-rest
-;;; make a stored-file-list object representing a rest
-(defun create-rest () (make-stored-file 'rest "/rest.wav" '() 0))
+;; *** subordinate-stored-file-list
+;;; only contains a list of stored-files and its probability weight
+;;; designed for one time use, eg. (result of get-sub-list-of-closest)
+(defclass subordinate-stored-file-list (list-object)
+  ())
+
+;; *** make-subordinate-stored-file-list
+(defun make-subordinate-stored-file-list (id data)
+  (make-instance 'subordinate-stored-file-list :id id :data data))
+
+;; *** decide-for-snd-file
+;;; returns the id of the chosen soundfile, based on the subordinate-sfl it got
+(defmethod decide-for-snd-file ((sub-sfl subordinate-stored-file-list)
+				random-number)
+  (let* ((weights '())
+	 (ids '()))
+    (loop for i in (data sub-sfl) do
+	 (push (car i) weights)
+	 (push (get-id (cadr i)) ids))
+    (nth (decider random-number
+		  weights)
+	 ids)))
 
 ;; *** get-ids
 ;;; get ids of all stored-files in stored-file-list
 (defmethod get-ids ((sfl stored-file-list))
   (loop for sf in (data sfl) collect
        (get-id sf)))
+
+;; *** get-coordinates
+;;; get coordinates of all stored-files in stored-file-list as '((x1 y1 z1 )...)
+(defmethod get-coordinates ((sfl stored-file-list))
+  (loop for sf in (data sfl) collect
+       (list (x sf) (y sf) (z sf))))
+
+;; *** get-paths
+;;; show all paths to all sounds on the sfl
+(defmethod get-paths ((sfl stored-file-list))
+  (loop for p in (data sfl) collect (path p)))
+
+;; *** get-sub-list-of-closest
+;;; get a list of soundfiles which are close to current position in x,y,z
+(defmethod get-sub-list-of-closest ((sfl stored-file-list)
+				    current-position
+				    &key (max-distance 0.6)) ;; maybe change?
+  (let* ((min 10)
+	 (closest)
+	 (ls '())) ;; no distance should ever be greater when x,y,z are < 1
+    (loop for sf in (data sfl) do
+	 ;; get distance between point of sf and current position
+	 (let ((dis (distance-between-points (vector (x sf) (y sf) (z sf))
+					     current-position)))
+	   (when (< dis min) (setf min dis) (setf closest sf))
+	   (when (< dis max-distance) (push (list (/ 1 (+ 0.01 dis)) sf) ls))))
+    ;; when no point is close enough, at least return the closest one
+    (when (null ls) (push (list (/ 1 min) closest) ls))
+    (print (id (cadar (data (make-subordinate-stored-file-list 'closest-files ls)))))
+    (make-subordinate-stored-file-list 'closest-files ls)))
+
+;; *** create-rest
+;;; make a stored-file-list object representing a rest
+(defun create-rest () (make-stored-file 'rest "/rest.wav" :markov '() :decay 0))
 
 ;; *** store-file-in-list
 ;;; stores a stored-file object in a stored-file-list, when its id is unique
@@ -757,11 +856,6 @@
 	      (push sf (data sfl)))
 	    (push sf (data sfl)))))
   (unless (last-played sfl) (setf (last-played sfl) sf)))
-
-;; *** get-paths
-;;; show all paths to all sounds on the sfl
-(defmethod get-paths ((sfl stored-file-list))
-  (loop for p in (data sfl) collect (path p)))
 
 ;; *** folder-to-stored-file-list
 ;;; bunch-add all soundfiles in a folder to a stored-file-list
@@ -788,13 +882,13 @@
 	  (make-stored-file
 	   id
 	   file
-	   (loop for i in ids
-	      for markov = (assoc i markov-list)
-	      collect
-		(list i (if markov
-			    (cadr markov)
-			    1)))
-	   decay
+	   :markov (loop for i in ids
+		      for markov = (assoc i markov-list)
+		      collect
+			(list i (if markov
+				    (cadr markov)
+				    1)))
+	   :decay decay
 	   :start start
 	   :directory ""
 	   :panorama panorama
@@ -932,6 +1026,8 @@
 ;;; determines next sound file in current-stored-file-list depending on either:
 ;;; - length-dependant-list
 ;;; - markov list with fixed-seed-randomness
+;;; - position in coordinate space and fixed-seed-randomness
+;;; can receive a sub-sfl, containing only some stored-files
 ;;; then checks wheter the preferred-length matches, if no: repeat.
 (defmethod determine-new-stored-file ((ly layer))
   (let ((data (data (stored-file-list ly))))
@@ -941,14 +1037,19 @@
        ;; when current file has no length-dependant-list
        ;; a random number and the markov-list will decide.
        ;; else we use the length-dependant-list
-	 (if (length-dependant-list (current-stored-file ly))
-	     (decide-for-snd-file
-	      (length-dependant-list (current-stored-file ly))
-	      (this-length ly))
-	     (decide-for-snd-file
-	      (markov-list
-	       (current-stored-file ly))
-	      (get-next *random-number*)))
+	 (cond (*use-sample-clouds*
+		(decide-for-snd-file
+		 (get-sub-list-of-closest (stored-file-list ly)
+					  *x-y-z-position*)
+		 (get-next *random-number*)))
+	       ((length-dependant-list (current-stored-file ly))
+		(decide-for-snd-file
+		 (length-dependant-list (current-stored-file ly))
+		 (this-length ly)))
+	       (t (decide-for-snd-file
+		   (markov-list
+		    (current-stored-file ly))
+		   (get-next *random-number*))))
        do
 	 (when (eq (id snd)
 		   new-id)
@@ -1030,10 +1131,12 @@
 	(setf (play ly) nil)))
     ;; set time for the next sample and then actually determine the new sample
     (setf
+     ;; sample-lengths
      (last-length ly)
      (this-length ly)
      (this-length ly)
      (get-next-by-time (current-time ly) (length-list ly))
+     ;; new-sample
      (current-stored-file ly)
      (determine-new-stored-file ly)
      )))

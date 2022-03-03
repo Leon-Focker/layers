@@ -1,4 +1,4 @@
-#N canvas 175 156 487 410 12;
+#N canvas 175 156 696 393 12;
 #X obj 147 8 loadbang;
 #X floatatom 170 51 5 0 0 0 - - length;
 #X floatatom 114 47 5 0 0 0 - - seed;
@@ -18,20 +18,18 @@
 0;
 #X obj 233 27 bng 25 250 50 0 reset empty empty 17 7 0 10 -262144 -1
 -1;
-#X obj 385 26 tgl 25 0 directout empty empty 17 7 0 10 -262144 -1 -1
-0 1;
-#X obj 363 1 cnv 15 10 10 empty empty directout 20 12 0 14 -99865 -262144
-0;
+#X obj 385 26 tgl 25 0 sample-clouds empty empty 17 7 0 10 -262144
+-1 -1 1 1;
+#X obj 359 1 cnv 15 10 10 empty empty use-clouds 20 12 0 14 -99865
+-262144 0;
 #X obj 150 1 cnv 15 10 10 empty empty length 20 12 0 14 -99865 -262144
 0;
 #X msg 170 29 240;
 #X msg 113 29 23;
 #X obj 56 201 loadbang;
 #X obj 56 222 s init;
-#N canvas 975 198 1430 521 subpatch 0;
+#N canvas 279 272 1430 521 subpatch 0;
 #X obj 161 306 osc-sc-eval-5000;
-#X obj 27 259 r seed;
-#X msg 27 285 (set-seed-to \$1);
 #N canvas 264 73 749 848 magic 0;
 #X obj 191 448 cyclone/fromsymbol;
 #X obj 215 421 cyclone/fromsymbol;
@@ -111,11 +109,6 @@
 #X obj 425 94 spigot;
 #X obj 161 23 select 1;
 #X msg 464 285 (set-start-stop \$1);
-#X obj 351 257 r reset;
-#X msg 611 285 (set-loop \$1);
-#X obj 611 259 r loop;
-#X msg 715 285 (set-total-length \$1);
-#X obj 715 259 r length;
 #X msg 161 90 1;
 #X msg 161 113 2;
 #X msg 161 136 3;
@@ -166,7 +159,7 @@
 #X obj 826 88 s send-to-sc;
 #X msg 826 64 (swap-stored-file-list *layer1* *breath*);
 #X obj 249 349 print;
-#X msg 553 339 (print (+ 1 1));
+#X msg 617 285 (print (+ 1 1));
 #N canvas 457 250 450 300 clock 0;
 #X obj 28 64 metro 10;
 #X obj 28 28 r start;
@@ -250,7 +243,7 @@
 #X connect 26 0 27 2;
 #X connect 27 0 28 0;
 #X connect 28 0 15 0;
-#X restore 280 285 pd set-n;
+#X restore 396 285 pd set-n;
 #N canvas 476 244 951 280 mixer-and-out 0;
 #X obj 39 110 catch~ layer1;
 #X obj 136 110 catch~ layer2;
@@ -294,95 +287,131 @@
 #X connect 14 0 19 0;
 #X connect 15 0 12 0;
 #X restore 30 69 pd mixer-and-out;
-#X msg 351 285 (reload-layers);
 #X msg 878 269 (list '1 "E:/code/layers/samples/no-input/accents/accent5.wav"
 4.6875 0 10 500 1 0 'ACCENT1 45 1), f 74;
-#X msg 884 329 (list 'print "test 123");
+#X msg 881 313 (list 'print "test 123");
 #X obj 288 50 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
 -1;
 #X obj 161 206 pack f;
 #X msg 161 232 (play-layer '\$1 *layers*);
-#X connect 0 0 4 0;
-#X connect 0 0 3 0;
+#N canvas 1084 268 598 378 to-sc 0;
+#X obj 61 240 outlet;
+#X obj 13 9 r seed;
+#X msg 13 35 (set-seed-to \$1);
+#X msg 140 34 (set-loop \$1);
+#X obj 140 8 r loop;
+#X msg 244 34 (set-total-length \$1);
+#X obj 244 8 r length;
+#X obj 256 66 r reset;
+#X msg 256 94 (reload-layers);
+#X obj 268 166 r sample-clouds;
+#X msg 268 192 (set-use-sample-clouds \$1);
+#X obj 197 307 pack f f f;
+#X msg 197 333 (set-x-y-z \$1 \$2 \$3);
+#X obj 226 259 t b f;
+#X obj 270 259 t b f;
+#X obj 197 233 r x;
+#X obj 226 233 r y;
+#X obj 270 233 r z;
+#X obj 328 260 loadbang;
+#X msg 328 286 0.5;
 #X connect 1 0 2 0;
 #X connect 2 0 0 0;
-#X connect 5 0 9 0;
-#X connect 5 0 51 0;
-#X connect 6 0 11 0;
-#X connect 7 0 20 0;
-#X connect 7 0 21 0;
-#X connect 7 0 22 0;
+#X connect 3 0 0 0;
+#X connect 4 0 3 0;
+#X connect 5 0 0 0;
+#X connect 6 0 5 0;
+#X connect 7 0 8 0;
+#X connect 8 0 0 0;
+#X connect 9 0 10 0;
+#X connect 10 0 0 0;
+#X connect 11 0 12 0;
+#X connect 12 0 0 0;
+#X connect 13 0 11 0;
+#X connect 13 1 11 1;
+#X connect 14 0 11 0;
+#X connect 14 1 11 2;
+#X connect 15 0 11 0;
+#X connect 16 0 13 0;
+#X connect 17 0 14 0;
+#X connect 18 0 19 0;
+#X connect 19 0 11 2;
+#X connect 19 0 11 1;
+#X restore 185 271 pd to-sc;
+#X connect 0 0 2 0;
+#X connect 0 0 1 0;
+#X connect 3 0 7 0;
+#X connect 3 0 43 0;
+#X connect 4 0 9 0;
+#X connect 5 0 13 0;
+#X connect 5 0 14 0;
+#X connect 5 0 15 0;
+#X connect 5 0 16 0;
+#X connect 5 0 17 0;
+#X connect 6 0 10 0;
 #X connect 7 0 23 0;
-#X connect 7 0 24 0;
+#X connect 8 0 7 1;
+#X connect 8 0 9 1;
+#X connect 8 0 10 1;
 #X connect 8 0 12 0;
-#X connect 9 0 30 0;
-#X connect 10 0 9 1;
-#X connect 10 0 11 1;
-#X connect 10 0 12 1;
-#X connect 10 0 14 0;
-#X connect 10 0 13 0;
-#X connect 10 0 25 1;
-#X connect 10 0 26 1;
-#X connect 11 0 31 0;
-#X connect 12 0 32 0;
-#X connect 13 0 7 0;
-#X connect 14 0 0 0;
-#X connect 15 0 48 0;
-#X connect 16 0 0 0;
-#X connect 17 0 16 0;
-#X connect 18 0 0 0;
-#X connect 19 0 18 0;
-#X connect 20 0 52 0;
-#X connect 21 0 52 0;
-#X connect 22 0 52 0;
-#X connect 23 0 52 0;
-#X connect 24 0 52 0;
-#X connect 25 0 33 0;
-#X connect 26 0 34 0;
-#X connect 27 0 25 0;
-#X connect 28 0 26 0;
-#X connect 30 0 20 0;
-#X connect 31 0 21 0;
-#X connect 32 0 22 0;
-#X connect 33 0 23 0;
-#X connect 34 0 24 0;
-#X connect 35 0 30 1;
-#X connect 35 0 30 0;
-#X connect 36 0 31 1;
-#X connect 36 0 31 0;
-#X connect 37 0 32 1;
-#X connect 37 0 32 0;
-#X connect 38 0 33 1;
-#X connect 38 0 33 0;
-#X connect 39 0 34 1;
-#X connect 39 0 34 0;
-#X connect 40 0 41 0;
-#X connect 42 0 41 0;
-#X connect 44 0 0 0;
+#X connect 8 0 11 0;
+#X connect 8 0 18 1;
+#X connect 8 0 19 1;
+#X connect 9 0 24 0;
+#X connect 10 0 25 0;
+#X connect 11 0 5 0;
+#X connect 12 0 0 0;
+#X connect 13 0 44 0;
+#X connect 14 0 44 0;
+#X connect 15 0 44 0;
+#X connect 16 0 44 0;
+#X connect 17 0 44 0;
+#X connect 18 0 26 0;
+#X connect 19 0 27 0;
+#X connect 20 0 18 0;
+#X connect 21 0 19 0;
+#X connect 23 0 13 0;
+#X connect 24 0 14 0;
+#X connect 25 0 15 0;
+#X connect 26 0 16 0;
+#X connect 27 0 17 0;
+#X connect 28 0 23 1;
+#X connect 28 0 23 0;
+#X connect 29 0 24 1;
+#X connect 29 0 24 0;
+#X connect 30 0 25 1;
+#X connect 30 0 25 0;
+#X connect 31 0 26 1;
+#X connect 31 0 26 0;
+#X connect 32 0 27 1;
+#X connect 32 0 27 0;
+#X connect 33 0 34 0;
+#X connect 35 0 34 0;
+#X connect 37 0 0 0;
+#X connect 39 0 0 0;
+#X connect 41 0 0 0;
+#X connect 42 0 0 0;
+#X connect 44 0 45 0;
+#X connect 45 0 0 0;
 #X connect 46 0 0 0;
-#X connect 48 0 0 0;
-#X connect 49 0 0 0;
-#X connect 50 0 0 0;
-#X connect 52 0 53 0;
-#X connect 53 0 0 0;
 #X restore 380 55 pd subpatch;
 #X obj 1 77 cnv 15 460 255 empty empty Layers 20 12 0 14 -191407 -66577
 0;
 #X obj 45 159 vu 15 120 meter1 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 19 151 vsl 15 128 0 1 0 0 fader1 midi1 empty 0 -9 0 10 -262144
--1 -1 6500 1;
+-1 -1 5400 1;
 #X obj 132 158 vu 15 120 meter2 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 107 151 vsl 15 128 0 1 0 0 fader2 midi2 empty 0 -9 0 10 -262144
--1 -1 5900 1;
+-1 -1 4800 1;
 #X obj 220 158 vu 15 120 meter3 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 195 151 vsl 15 128 0 1 0 0 fader3 midi3 empty 0 -9 0 10 -262144
--1 -1 6700 1;
+-1 -1 0 1;
 #X obj 308 158 vu 15 120 meter4 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 283 151 vsl 15 128 0 1 0 0 fader4 midi4 empty 0 -9 0 10 -262144
--1 -1 6200 1;
+-1 -1 0 1;
 #X obj 396 158 vu 15 120 meter5 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 371 151 vsl 15 128 0 1 0 0 fader5 midi5 empty 0 -9 0 10 -262144
--1 -1 5400 1;
+-1 -1 0 1;
 #X symbolatom 19 103 12 0 0 2 - id1 -;
 #X symbolatom 107 103 12 0 0 2 - id2 -;
 #X symbolatom 195 103 12 0 0 2 - id3 -;
@@ -411,9 +440,9 @@
 #X obj 371 359 tgl 15 0 stop-5 init empty 17 7 0 10 -262144 -1 -1 1
 1;
 #X obj 19 308 hradio 15 1 0 5 n-1 empty empty 0 -8 0 10 -262144 -1
--1 4;
+-1 1;
 #X obj 107 308 hradio 15 1 0 5 n-2 empty empty 0 -8 0 10 -262144 -1
--1 4;
+-1 2;
 #X obj 196 308 hradio 15 1 0 5 n-3 empty empty 0 -8 0 10 -262144 -1
 -1 0;
 #X obj 283 308 hradio 15 1 0 5 n-4 empty empty 0 -8 0 10 -262144 -1
@@ -425,6 +454,24 @@
 #X floatatom 194 126 10 0 0 0 - clock-3 -;
 #X floatatom 282 126 10 0 0 0 - clock-4 -;
 #X floatatom 370 126 10 0 0 0 - clock-5 -;
+#X obj 434 357 tgl 25 0 directout empty empty 17 7 0 10 -228856 -1
+-1 0 1;
+#X obj 371 334 cnv 15 10 10 empty empty directout 20 12 0 14 -99865
+-262144 0;
+#X obj 462 1 cnv 15 200 382 empty empty empty 20 12 0 14 -66577 -66577
+0;
+#X obj 503 99 vsl 15 128 0 1 0 0 x empty empty 0 -9 0 10 -228856 -1
+-1 0 1;
+#X obj 559 99 vsl 15 128 0 1 0 0 y empty empty 0 -9 0 10 -228856 -1
+-1 0 1;
+#X obj 615 99 vsl 15 128 0 1 0 0 z empty empty 0 -9 0 10 -228856 -1
+-1 0 1;
+#X obj 485 230 cnv 15 5 5 empty empty X 20 12 0 14 -66577 -262144 0
+;
+#X obj 541 230 cnv 15 5 5 empty empty Y 20 12 0 14 -66577 -262144 0
+;
+#X obj 598 230 cnv 15 5 5 empty empty Z 20 12 0 14 -66577 -262144 0
+;
 #X connect 0 0 15 0;
 #X connect 0 0 14 0;
 #X connect 14 0 1 0;
