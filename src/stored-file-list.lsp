@@ -57,6 +57,11 @@
   (loop for sf in (data sfl) collect
        (get-id sf)))
 
+;; *** get-all
+;;; gets list of all values in a slot of the stored-file ins stored-file-list
+(defmethod get-all (slot (sfl stored-file-list))
+  (loop for i in (data sfl) collect (funcall slot i)))
+
 ;; *** get-coordinates
 ;;; get coordinates of all stored-files in stored-file-list as '((x1 y1 z1 )...)
 (defmethod get-coordinates ((sfl stored-file-list))
@@ -88,6 +93,30 @@
     (when (null ls) (push (list (/ 1 min) closest) ls))
     ;;(print (id (cadar (data (make-subordinate-stored-file-list 'closest-files ls)))))
     (make-subordinate-stored-file-list 'closest-files ls)))
+
+;; *** auto-scale-mapping
+;;; automatically scale all x, y and z values
+;;; to optimally fill out coordinate spate
+(defmethod auto-scale-mapping ((sfl stored-file-list) &key remap)
+  (let* ((len (length (data sfl)))
+	 (all-x (sort (get-all 'x sfl) #'<))
+	 (all-y (sort (get-all 'y sfl) #'<))
+	 (all-z (sort (get-all 'z sfl) #'<))
+	 (x-min (first all-x))
+	 (y-min (first all-y))
+	 (z-min (first all-z))
+	 (x-max (car (last all-x)))
+	 (y-max (car (last all-y)))
+	 (z-max (car (last all-z))))
+    (if remap
+      (loop for i from 0 and sf in (data sfl) do
+	   (setf (x sf) (/ (index-of-element (x sf) all-x) len)
+		 (y sf) (/ (index-of-element (y sf) all-y) len)
+		 (z sf) (/ (index-of-element (z sf) all-z) len)))
+      (loop for sf in (data sfl) do
+	 (setf (x sf) (/ (- (x sf) x-min) (- x-max x-min))
+	       (y sf) (/ (- (y sf) y-min) (- y-max y-min))
+	       (z sf) (/ (- (z sf) z-min) (- z-max z-min)))))))
 
 ;; *** store-file-in-list
 ;;; stores a stored-file object in a stored-file-list, when its id is unique
@@ -192,11 +221,6 @@
    :sfl-when-shorter (sfl-when-shorter sfl1)
    :sfl-when-longer (sfl-when-longer sfl1)))
 
-;; *** get-all
-;;; gets list of all values in a slot of the stored-file ins stored-file-list
-(defmethod get-all (slot (sfl stored-file-list))
-  (loop for i in (data sfl) collect (funcall slot i)))
-
 ;; *** check-mapping
 ;;; checks wheter any x, y or z value is not between 0 and 1,
 ;;; maybe does more in the future
@@ -208,29 +232,5 @@
 		 (< (min x y z) 0))
 	 (warn "~&found x, y or z value that is not in bounds 0 - 1 in sfl ~a"
 	       (get-id sfl)))))
-
-;; *** auto-scale-mapping
-;;; automatically scale all x, y and z values
-;;; to optimally fill out coordinate spate
-(defmethod auto-scale-mapping ((sfl stored-file-list) &key remap)
-  (let* ((len (length (data sfl)))
-	 (all-x (sort (get-all 'x sfl) #'<))
-	 (all-y (sort (get-all 'y sfl) #'<))
-	 (all-z (sort (get-all 'z sfl) #'<))
-	 (x-min (first all-x))
-	 (y-min (first all-y))
-	 (z-min (first all-z))
-	 (x-max (car (last all-x)))
-	 (y-max (car (last all-y)))
-	 (z-max (car (last all-z))))
-    (if remap
-      (loop for i from 0 and sf in (data sfl) do
-	   (setf (x sf) (/ (index-of-element (x sf) all-x) len)
-		 (y sf) (/ (index-of-element (y sf) all-y) len)
-		 (z sf) (/ (index-of-element (z sf) all-z) len)))
-      (loop for sf in (data sfl) do
-	 (setf (x sf) (/ (- (x sf) x-min) (- x-max x-min))
-	       (y sf) (/ (- (y sf) y-min) (- y-max y-min))
-	       (z sf) (/ (- (z sf) z-min) (- z-max z-min)))))))
 
 ;;;; EOF stored-file-list.lsp
