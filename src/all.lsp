@@ -14,6 +14,7 @@
 ;;;;   position (moving average?) as to not jump to a new position)
 ;;;; write layers into .txt to not reload and analyse every time
 ;;;; while analysing soundfile, find better way to determine transients?
+;;;; when trying to auto-scale, check wheter x y z are actually set.
 
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value

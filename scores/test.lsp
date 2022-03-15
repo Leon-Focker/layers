@@ -22,19 +22,24 @@
 
 (folder-to-stored-file-list *one-shots*
 			    "/E/code/layers/samples/one-shots/bass/"
-			    :decay 100)
+			    :decay 100
+			    :auto-map t)
 (folder-to-stored-file-list *one-shots*
 			    "/E/code/layers/samples/one-shots/breath/"
-			    :decay 100)
+			    :decay 100
+			    :auto-map t)
 (folder-to-stored-file-list *one-shots*
 			    "/E/code/layers/samples/one-shots/drums/"
-			    :decay 100)
+			    :decay 100
+			    :auto-map t)
 (folder-to-stored-file-list *one-shots*
 			    "/E/code/layers/samples/one-shots/glitch/"
-			    :decay 100)
+			    :decay 100
+			    :auto-map t)
 (folder-to-stored-file-list *one-shots*
 			    "/E/code/layers/samples/one-shots/whispers/"
-			    :decay 100)
+			    :decay 100
+			    :auto-map t)
 
 (auto-scale-mapping *one-shots* :remap t)
 

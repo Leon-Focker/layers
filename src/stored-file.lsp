@@ -162,7 +162,7 @@
 (defmethod map-soundfile ((sf stored-file)
 			  &key
 			    (f1 #'(lambda (sf) (/ (log (centroid sf)) 12000)))
-			    (f2 #'(lambda (sf) (+ (* (/ (log (spread sf)) 12)
+			    (f2 #'(lambda (sf) (+ (* (/ (log (spread sf)) 12000)
 						     0.5)
 						  (* (flatness sf) 0.5))))
 			    (f3 #'(lambda (sf) (+ (* (- 1
