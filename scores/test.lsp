@@ -1,11 +1,54 @@
-(in-package :sc)
+(in-package :ly)
 
 ;;; load layers and set this file to current score file:
 
-(load "/E/code/layers/src/layers.lsp")
+(unless (fboundp 'ly::layers-has-been-loaded)
+  (load "/E/code/layers/src/layers.lsp"))
 (setf *score-file* *load-pathname*)
 
 ;; * stored files
+;; ** glitch
+
+;;(defparameter *glitch* (make-stored-file-list 'glitch '()))
+
+#+nil(folder-to-stored-file-list *glitch*
+			    "/E/code/layers/samples/one-shots/glitch/"
+			    :decay 100
+			    :auto-map t
+			    :auto-scale-mapping t
+			    :remap t)
+
+(defparameter *one-shots* (make-stored-file-list 'one-shots '()))
+
+(folder-to-stored-file-list *one-shots*
+			    "/E/code/layers/samples/one-shots/bass/"
+			    :decay 100)
+(folder-to-stored-file-list *one-shots*
+			    "/E/code/layers/samples/one-shots/breath/"
+			    :decay 100)
+(folder-to-stored-file-list *one-shots*
+			    "/E/code/layers/samples/one-shots/drums/"
+			    :decay 100)
+(folder-to-stored-file-list *one-shots*
+			    "/E/code/layers/samples/one-shots/glitch/"
+			    :decay 100)
+(folder-to-stored-file-list *one-shots*
+			    "/E/code/layers/samples/one-shots/whispers/"
+			    :decay 100)
+
+(auto-scale-mapping *one-shots* :remap t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defparameter *drums1* (make-stored-file-list 'drums1 '()))
+
+(folder-to-stored-file-list *drums1*
+			    "/E/code/layers/samples/one-shots/drums/"
+			    :decay 100
+			    :auto-map t
+			    :auto-scale-mapping t
+			    :remap t)
+
 ;; ** snare
 
 (defparameter *snare* (make-stored-file-list 'snare '()))
@@ -708,13 +751,13 @@
 
 ;;; define each layer:
 
-(defparameter *layer1* (make-layer '1 *drums* *structure* 4 0 nil))
-(defparameter *layer2* (make-layer '2 *drums* *structure* 4 90 nil))
-(defparameter *layer3* (make-layer '3 *drums* *structure* 4 45))
-(defparameter *layer4* (make-layer '4 *transformations* *structure* 4 0))
-(defparameter *layer5* (make-layer '5 *transformations* *structure* 4 90))
+(defparameter *layer1* (make-layer '1 *drums1* *structure* 2 0 nil))
+(defparameter *layer2* (make-layer '2 *drums1* *structure* 2 90 nil))
+(defparameter *layer3* (make-layer '3 *one-shots* *structure* 0 45))
+(defparameter *layer4* (make-layer '4 *one-shots* *structure* 1 0))
+(defparameter *layer5* (make-layer '5 *one-shots* *structure* 2 90))
 
 ;;;define layers-object:
 
-(defparameter *layers*
+(setf *layers*
   (make-layers 'layers (list *layer1* *layer2* *layer3* *layer4* *layer5*)))

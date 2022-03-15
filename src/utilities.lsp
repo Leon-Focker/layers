@@ -9,8 +9,29 @@
 (defgeneric id (base-object)
   (:documentation "returns the id of any object"))
 
+(defgeneric get-id (base-object)
+  (:documentation "returns the id of any object"))
+
 (when *load-risky-files*
   (load (format nil "~a~a" *src-dir* "export-with-clm.lsp")))
+
+;; *** conditions
+(define-condition markov-list-is-nil (error)
+  ((text :initarg :text :reader text)))
+
+(define-condition markov-list-is-empty (error)
+  ((text :initarg :text :reader text)))
+
+(define-condition no-value (error)
+  ((text :initarg :text :reader text
+	 :initform "~&when calling ~a some data was missing: ~&~a")))
+
+(define-condition weird-values (error)
+  ((text :initarg :text :reader text
+	 :initform "~&when calling ~a it noticed some weird values in: ~&~a")))
+
+(define-condition id-not-found (error)
+  ((text :initarg :text :reader text)))
 
 ;; *** os-path
 ;;; converts device-names ("/E/", "E:/") according to current platfrom
@@ -76,9 +97,10 @@
 
 ;; *** set-x-y-z
 ;;; sets the global *total-length* variable to value in seconds
-(defun set-x-y-z (x y z)
+(defun set-x-y-z (x y z &key (printing nil))
   (setf *x-y-z-position* (vector x y z))
-  (format t "~& *x-y-z-position* has been set to ~a" *x-y-z-position*))
+  (when printing
+    (format t "~& *x-y-z-position* has been set to ~a" *x-y-z-position*)))
 
 ;; *** decider
 ;;; gets (random) value as chooser between 0 and 1 and a list
@@ -91,8 +113,16 @@
 			      (cdr ls1)
 			      (+ index 1)
 			      (+ sum (car ls1)))))))
-    (helper (sc::rescale chooser 0 1 0 (loop for i in ls sum i))
+    (helper (sc::rescale chooser 0 1 0 (loop for i in ls
+					  do (unless i (error 'no-value))
+					  sum i))
 	    (cdr ls) 0 (car ls))))
+
+;; *** index-of-element
+(defun index-of-element (element ls)
+  (unless (and ls (listp ls)) (error 'no-value))
+  (let* ((len (length ls)))
+    (- len (length (member element ls)))))
 
 ;; *** remove-nth
 ;;; remove nth element from list
@@ -122,7 +152,67 @@
 ;; *** soundfile-duration
 ;;; get the duration of a soundfile in seconds
 (defun soundfile-duration (path)
-  (clm::sound-duration path))
+  (clm::mus-length path))
+
+;; *** biggest-jump
+;;; discrete derivation maximum i guess?
+(defun biggest-jump (ls)
+  (loop for i in (cdr ls)
+     with last = (car ls)
+     maximize (abs (- last i))
+     do (setf last i)))
+
+;; *** biggest-jump-up
+(defun biggest-jump-up (ls)
+  (loop for i in (cdr ls)
+     with last = (car ls)
+     maximize (- i last)
+     do (setf last i)))
+
+;; *** biggest-jump-down
+(defun biggest-jump-down (ls)
+  (loop for i in (cdr ls)
+     with last = (car ls)
+     maximize (- last i)
+     do (setf last i)))
+
+;; *** reduce-by
+;;; reduces a list by factor (100 elements to 10 elements, factor 10)
+;;; using average
+(defun reduce-by (ls &optional (factor 10))
+  (unless (integerp factor)
+    (error "reduce-by needs a factor that is an integer, not ~a" factor))
+  (let* ((new '()))
+    (loop for i from 1 and e in ls with sum = 0 do
+	 (incf sum (/ e factor))
+	 (when (= (mod i factor) 0)
+	   (push sum new)
+	   (setf sum 0)))
+    (reverse new)))
+
+;; *** flatness
+;;; this might not be useful at all for anything but spectra
+(defun list-flatness (ls)
+  (let ((arithmetic-mean 0)
+	(geometric-mean 0)
+	(len (length ls)))
+    (loop for i in ls do
+	 (when (= i 0) (setf i 0.000001))
+	 (incf arithmetic-mean i)
+	 (incf geometric-mean (log i)))
+    (setf arithmetic-mean (/ arithmetic-mean len))
+    (setf geometric-mean (exp (/ geometric-mean len)))
+    (/ geometric-mean arithmetic-mean)))
+
+;; *** find-with-id
+;;; loop through list of objects, looking for object with specific id
+(defun find-with-id (id ls)
+  (let* ((res (loop for el in ls do
+		   (when (eq id (get-id el))
+		     (return el)))))
+    (unless res (error 'id-not-found
+		       :text (format nil "~&id ~a not found in given list" id)))
+    res))
 
 ;; *** lists-to-midi
 ;;; write pitch duration and start-times into a midi-file
@@ -159,7 +249,7 @@
     (sc::event-list-to-midi-file
      events
      :start-tempo tempo
-     :midi-file (format nil "~a~a~a" (or dir *default-dir*) "/" name))))
+     :midi-file (format nil "~a~a~a" (or dir *src-dir*) "/" name))))
 
 ;; *** structure-to-midi
 (defun structure-to-midi (structure &key n dir)
@@ -179,7 +269,7 @@
 			(nth n rhythm-blocks)
 			(loop for i below len append (nth i rhythm-blocks)))))
     (lists-to-midi pitches durations start-times
-		   :dir (or dir *default-dir*)
+		   :dir (or dir *src-dir*)
 		   :name (if n
 			     (format nil "~a~a~a~a~a" "structure-"
 				     (id structure) "-n-" n ".mid")
@@ -191,8 +281,95 @@
 ;;; both need to be vectors with the same length
 (defun distance-between-points (p1 p2)
   (unless (and (vectorp p1) (vectorp p2) (= (length p1) (length p2)))
-    (error "~&both arguments need to be same-length vectors in function~
+    (error "~&both arguments need to be same-length vectors in function ~
              distance-between-points, ~%args: ~a ~a" p1 p2))
   (sqrt (loop for q across p1 and p across p2 sum (expt (- q p) 2.0))))
+
+;; *** max-of-array
+;;; max of an array
+(defun max-of-array (array)
+  (loop for i below (length array) maximize
+       (abs (aref array i))))
+
+;; *** get-spectral-centroid
+;;; calulate the spectral centroid out of a list of frequency-magnitude pairs
+;;; eq.: '((440 0.5) (630 0.46) (880 0.25))
+(defun get-spectral-centroid (list-of-pairs)
+  (let ((centroid 1))
+    (loop for pair in list-of-pairs
+       sum (* (car pair) (cadr pair)) into sum1
+       sum (cadr pair) into sum2
+       do (setf centroid (/ sum1 sum2)))
+    centroid))
+
+;; *** visualize stuff :)
+;;; aray or list as input
+(defun visualize (ls &key scaler (start 0) abs scale)
+  (when (arrayp ls)
+    (setf ls (loop for i across ls collect i)))
+  (when abs (setf ls (loop for i in ls collect (abs i))))
+  (let* ((matrix (make-array '(64 17) :initial-element 0.0))
+	 (maxi (apply #'max (mapcar #'abs ls)))
+	 (scaler (if scaler scaler
+		     (if (= maxi 0) 1 maxi)))
+	 (len (length ls))
+	 (size (if (or scale (>= len 64)) 64 len)))
+    (loop for i from start below (+ size start) do
+	 (loop for j below 17 do
+	      (if (= (round (+ (* (/ (nth (mod (floor
+						(+ start
+						   (* (/ i size)
+						      (- len start))))
+					       len)
+					  ls)
+				     scaler)
+				  8 (if abs 2 1))
+			       (* 8 (if abs 0 1))))
+		     j)
+		  (setf (aref matrix (- i start) j) 1)
+		  (setf (aref matrix (- i start) j) 0))))
+    (loop for j downfrom 16 to 0 do
+	 (print  (apply 'concatenate 'string
+			(loop for i below 64 collect
+			     (if (= (aref matrix i j)  1)
+				 "_"
+				 " ")))))
+    "=)"))
+
+;; *** taylor-polynom
+;;; get taylor polynomial, pls check this again, probably false
+(defun second-order-taylor (ls x)
+  (let* ((len (length ls))
+	 (n (floor (* x len)))
+	 ;; list as function
+	 (f1 #'(lambda (n) (nth n ls)))
+	 ;; crooked derivative function
+	 (f2 #'(lambda (f n) (/ (- (funcall f (1+ n)) (funcall f (1- n)))
+				(/ 2 len))))
+	 (a (funcall f1 n))
+	 (b (funcall f2 f1 n))
+	 (c (funcall f2 #'(lambda (n) (funcall f2 f1 n)) n))
+	 )
+  (lambda (x) (+ a
+		 (* b x)
+		 (* c (expt x 2))))))
+
+;; *** second-order-taylor-rotated
+;;; bs function, not needed for now
+#+nil(defun second-order-taylor-rotated (ls x)
+  (let* ((len (length ls))
+	 (n (floor (* x len)))
+	 ;; list as function
+	 (f1 #'(lambda (x) (decider (/ x len) ls)))
+	 ;; crooked derivative function
+	 (f2 #'(lambda (f n) (/ (- (funcall f (1+ n)) (funcall f (1- n)))
+				(/ 2 len))))
+	 (a (funcall f1 n))
+	 (b (funcall f2 f1 n))
+	 (c (funcall f2 #'(lambda (n) (funcall f2 f1 n)) n))
+	 )
+  (lambda (x) (+ a
+		 (* b x)
+		 (* c (expt x 2))))))
 
 ;;;; EOF utilities.lsp

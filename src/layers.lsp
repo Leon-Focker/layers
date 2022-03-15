@@ -50,9 +50,12 @@
 ;; *** set-n
 ;;; change the n-for-length-list value even while playing
 (defmethod set-n (n layer-id (lys layers) current-time)
-  (let* ((ly (loop for layer in (data lys) do
-		  (when (eq layer-id (get-id layer))
-		    (return layer))))
+  (let* ((ly (handler-case (find-with-id layer-id (data lys))
+	       ;; if no layer with id is found, just take first one in list
+	       ;; to prevent this function crashing
+	       (id-not-found (c)
+		 (warn (text c))
+		 (first (data lys)))))
 	 ;; check and see if n is too big, then choose list
 	 (ls (progn (when (>= n (length (data (structure ly))))
 		      (progn (warn "~&n ~a is too big for structure of layer ~a"
@@ -133,7 +136,6 @@
 ;; *** reset-layers
 ;;; resets everything to the start of the piece and re-read structure
 (defun reset-layers (&optional layers-object)
-  (declare (special *layers*))
   (setf (data *random-number*) *seed*)	; reset *random-number*
   (unless layers-object (setf layers-object *layers*))
   (let ((sts '()))
@@ -153,8 +155,9 @@
 
 ;; *** reload-layers
 ;;; even better than a reset. reloads everything
-(defun reload-layers ()
+(defun reload-layers (&optional load-all)
   (load *score-file*)
+  (when load-all (load-all))
   nil)
 
 ;; *** get-ids

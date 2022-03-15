@@ -43,10 +43,13 @@
       (format t "~&getting calls for clm...")
       (when reset-layers (reset-layers layers)))))
 
-
 (in-package :clm)
 
-(load "/home/leon/lisp/edwards/samp1.ins")
+(let ((file "/home/leon/lisp/edwards/samp1.ins"))
+  (if (probe-file file)
+      (load file)
+      (error "~&~a not found, please replace with your path to Michael Edwards~
+              samp1 instrument" file)))
 
 ;; *** calls-to-samp1
 ;;; this is a helper function for layers-to-clm

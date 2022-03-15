@@ -1,84 +1,7 @@
-;; ** soundfiles
+;; ** stored-file-list
 ;;;; storing and categorising soundfiles etc.
 
 (in-package :layers)
-
-;; *** stored-file
-;;; a file in the data-base, with certain properties, eg. a markov-list,
-;;; which links it to other soundfiles
-(defclass stored-file (base-object)
-  ((name :accessor name :initarg :name :initform nil)
-   (path :accessor path :initarg :path :initform nil)
-   (markov-list :accessor markov-list :initarg :markov-list
-		:initform nil)
-   ;; this helps decide the next file dependant on the current play-length
-   (length-dependant-list :accessor length-dependant-list
-			  :initarg :length-dependant-list
-			  :initform nil)
-   (preferred-length :accessor preferred-length :initarg :preferred-length
-		     :initform nil)
-   (duration :accessor duration :initarg :duration :initform 0)
-   (start :accessor start :initarg :start :initform 0)
-   (amplitude :accessor amplitude :initarg :amplitude :initform 1)
-   (loop-flag :accessor loop-flag :initarg :loop-flag :initform nil)
-   (decay :accessor decay :initarg :decay :initform 0)
-   (panorama :accessor panorama :initarg :panorama :initform 45)
-   ;; position in a 3d coordinate space - can also be used to get next file
-   (x :accessor x :initarg :x :initform 0.5)
-   (y :accessor y :initarg :y :initform 0.5)
-   (z :accessor z :initarg :z :initform 0.5)))
-
-;; *** make-stored-file
-;;; create an instance of stored-file and config with markov-list etc.
-(defun make-stored-file (id path-from-default-dir
-			 &key
-			   markov
-			   (decay 100)
-			   (directory *default-sample-dir*)
-			   (start 0)
-			   (amplitude 1)
-			   (panorama 45)
-			   (loop-flag nil)
-			   (preferred-length nil)
-			   (x 0.5)
-			   (y 0.5)
-			   (z 0.5))
-  (let* ((path (format nil "~a~a" directory path-from-default-dir)))
-    (unless (probe-file path)
-      (warn "~&the file with path ~a does not exist" path))
-    (make-instance 'stored-file
-		 :id id
-		 :name (pathname-name path-from-default-dir)
-		 :path path
-		 :decay decay ; in seconds
-		 :markov-list (make-markov-list nil (if markov
-							markov
-							`((,id 1))))
-		 :duration (soundfile-duration path)
-		 :start start
-		 :amplitude amplitude
-		 :panorama panorama
-		 :loop-flag loop-flag
-		 :preferred-length preferred-length
-		 :x x
-		 :y y
-		 :z z)))
-
-;; *** setf-markov
-;;; sets the markov list of a stored-file
-(defmethod setf-markov ((sf stored-file) new-markov-list)
-  (setf (markov-list sf) new-markov-list))
-
-;;; example
-(make-stored-file
- 'noisy1
- "/rhythmic/noisy/1.wav"
- :markov '((noisy1 1)
-	   (noisy2 1)
-	   (noisy3 1)
-	   (noisy4 1)
-	   (noisy5 1))
- :decay 0)
 
 ;; *** stored-file-list
 ;;; list of stored files, no doubles
@@ -153,6 +76,7 @@
   (let* ((min 10)
 	 (closest)
 	 (ls '())) ;; no distance should ever be greater when x,y,z are < 1
+    (unless (data sfl) (error 'no-value))
     (loop for sf in (data sfl) do
 	 ;; get distance between point of sf and current position
 	 (let ((dis (distance-between-points (vector (x sf) (y sf) (z sf))
@@ -160,13 +84,10 @@
 	   (when (< dis min) (setf min dis) (setf closest sf))
 	   (when (< dis max-distance) (push (list (/ 1 (+ 0.01 dis)) sf) ls))))
     ;; when no point is close enough, at least return the closest one
+    (unless closest (error 'weird-values))
     (when (null ls) (push (list (/ 1 min) closest) ls))
-    (print (id (cadar (data (make-subordinate-stored-file-list 'closest-files ls)))))
+    ;;(print (id (cadar (data (make-subordinate-stored-file-list 'closest-files ls)))))
     (make-subordinate-stored-file-list 'closest-files ls)))
-
-;; *** create-rest
-;;; make a stored-file-list object representing a rest
-(defun create-rest () (make-stored-file 'rest "/rest.wav" :markov '() :decay 0))
 
 ;; *** store-file-in-list
 ;;; stores a stored-file object in a stored-file-list, when its id is unique
@@ -197,6 +118,9 @@
 				       &key
 					 id-uniquifier
 					 markov-list
+					 auto-map
+					 auto-scale-mapping
+					 remap
 					 (start 0)
 					 (decay 0) ; in seconds
 					 (panorama 45)
@@ -212,21 +136,28 @@
     (when (null files) (warn "no soundfiles found in ~a" dir))
     (loop for file in files and name in names and id in ids do
 	 (store-file-in-list
-	  (make-stored-file
-	   id
-	   file
-	   :markov (loop for i in ids
-		      for markov = (assoc i markov-list)
-		      collect
-			(list i (if markov
-				    (cadr markov)
-				    1)))
-	   :decay decay
-	   :start start
-	   :directory ""
-	   :panorama panorama
-	   :loop-flag loop-flag)
-	  sfl))))
+	  (prog1
+	      (let ((sf (make-stored-file
+			 id
+			 file
+			 :markov (loop for i in ids
+				    for markov = (assoc i markov-list)
+				    collect
+				      (list i (if markov
+						  (cadr markov)
+						  1)))
+			 :decay decay
+			 :start start
+			 :directory ""
+			 :panorama panorama
+			 :loop-flag loop-flag)))
+		(if auto-map
+		    (map-soundfile sf)
+		    sf))
+	    (format t "~&storing file: ~a" id))
+	  sfl))
+    (when auto-scale-mapping
+      (auto-scale-mapping sfl :remap remap))))
 
 ;; *** set-alternate-sfls
 ;;; set a few slots important for switching betweend sfls in a layer
@@ -261,4 +192,45 @@
    :sfl-when-shorter (sfl-when-shorter sfl1)
    :sfl-when-longer (sfl-when-longer sfl1)))
 
-;;;; EOF soundfiles.lsp
+;; *** get-all
+;;; gets list of all values in a slot of the stored-file ins stored-file-list
+(defmethod get-all (slot (sfl stored-file-list))
+  (loop for i in (data sfl) collect (funcall slot i)))
+
+;; *** check-mapping
+;;; checks wheter any x, y or z value is not between 0 and 1,
+;;; maybe does more in the future
+(defmethod check-mapping ((sfl stored-file-list))
+  (loop for x in (get-all 'x sfl)
+     and y in (get-all 'y sfl)
+     and z in (get-all 'z sfl) do
+       (when (or (> (max x y z) 1)
+		 (< (min x y z) 0))
+	 (warn "~&found x, y or z value that is not in bounds 0 - 1 in sfl ~a"
+	       (get-id sfl)))))
+
+;; *** auto-scale-mapping
+;;; automatically scale all x, y and z values
+;;; to optimally fill out coordinate spate
+(defmethod auto-scale-mapping ((sfl stored-file-list) &key remap)
+  (let* ((len (length (data sfl)))
+	 (all-x (sort (get-all 'x sfl) #'<))
+	 (all-y (sort (get-all 'y sfl) #'<))
+	 (all-z (sort (get-all 'z sfl) #'<))
+	 (x-min (first all-x))
+	 (y-min (first all-y))
+	 (z-min (first all-z))
+	 (x-max (car (last all-x)))
+	 (y-max (car (last all-y)))
+	 (z-max (car (last all-z))))
+    (if remap
+      (loop for i from 0 and sf in (data sfl) do
+	   (setf (x sf) (/ (index-of-element (x sf) all-x) len)
+		 (y sf) (/ (index-of-element (y sf) all-y) len)
+		 (z sf) (/ (index-of-element (z sf) all-z) len)))
+      (loop for sf in (data sfl) do
+	 (setf (x sf) (/ (- (x sf) x-min) (- x-max x-min))
+	       (y sf) (/ (- (y sf) y-min) (- y-max y-min))
+	       (z sf) (/ (- (z sf) z-min) (- z-max z-min)))))))
+
+;;;; EOF stored-file-list.lsp

@@ -1,5 +1,5 @@
 ;; ** layer
-;;;; layer class c:
+;;;; layer class - a lot of the magix is happening here
 
 (in-package :layers)
 
@@ -108,7 +108,21 @@
        ;; when current file has no length-dependant-list
        ;; a random number and the markov-list will decide.
        ;; else we use the length-dependant-list
-	 (cond (*use-sample-clouds*
+	 (handler-bind ((markov-list-is-nil
+			 #'(lambda (c)
+			     (error (text c)
+				    (get-id
+				     (current-stored-file ly)))))
+			(no-value
+			 #'(lambda (c)
+			     (error (text c)
+				    'get-sub-list-of-closest
+				    (id (stored-file-list ly)))))
+			(weird-values
+			 #'(lambda (c)
+			     (error (text c) 'get-sub-list-of-closest
+				    (id (stored-file-list ly))))))
+	   (cond (*use-sample-clouds*
 		(decide-for-snd-file
 		 (get-sub-list-of-closest (stored-file-list ly)
 					  *x-y-z-position*)
@@ -120,7 +134,7 @@
 	       (t (decide-for-snd-file
 		   (markov-list
 		    (current-stored-file ly))
-		   (get-next *random-number*))))
+		   (get-next *random-number*)))))
        do
 	 (when (eq (id snd)
 		   new-id)
