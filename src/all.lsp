@@ -12,9 +12,9 @@
 ;;;;   getting stuck. pls fix :c
 ;;;; (changing position in coordinate space in Pd, needs function that slowly adjusts
 ;;;;   position (moving average?) as to not jump to a new position)
-;;;; write layers into .txt to not reload and analyse every time
 ;;;; while analysing soundfile, find better way to determine transients?
 ;;;; when trying to auto-scale, check wheter x y z are actually set.
+;;;; implement layers-into-txt
 
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value
@@ -55,11 +55,13 @@
 		  "list-object.lsp"
 		  "markov.lsp"
 		  "length-dependant-list.lsp"
+		  "generate-structure.lsp"
 		  "structure.lsp"
 		  "stored-file.lsp"
 		  "stored-file-list.lsp"
 		  "layer.lsp"
 		  "layers.lsp"
+		  "play.lsp"
 		  ))
     (load (probe-file (format nil "~a~a" *src-dir* file))))
   (format t "~&finished loading!"))

@@ -1,5 +1,5 @@
 ;; ** layers
-;;;; the class to rule all classes
+;;;; the class to rule them all, a layers object basically represents a piece
 
 (in-package :layers)
 
@@ -48,7 +48,7 @@
 	       layer-id (get-id lys)))))
 
 ;; *** set-n
-;;; change the n-for-length-list value even while playing
+;;; change the n-for-list-of-durations value even while playing
 (defmethod set-n (n layer-id (lys layers) current-time)
   (let* ((ly (handler-case (find-with-id layer-id (data lys))
 	       ;; if no layer with id is found, just take first one in list
@@ -63,7 +63,7 @@
 			     (setf n (- (length (data (structure ly))) 1))))
 		    (nth n (data (structure ly)))))
 	 (len (length ls))
-	 (current 0) ;; current for new length-list
+	 (current 0) ;; current for new list-of-durations
 	 (new-next-trigger (loop for n from 0 and i = (nth (mod n len) ls)
 			  sum i into sum
 			  until (> sum current-time)
@@ -71,10 +71,10 @@
 					 (return sum))))
 	 (old-next-trigger (current-time ly)))
     ;; when resetting n, we need to tell lisp and the layer that we reset n:
-    (setf (n-for-length-list ly) n)
+    (setf (n-for-list-of-durations ly) n)
     ;; setting "current" should be obsolete, since the next length
     ;; will be chosen by using the current-time anyways. but for good measure:
-    (update-length-list ly current)
+    (update-list-of-durations ly current)
     ;; function get-next sets current time of layer to the time
     ;; when the next sample will be triggered. (old-next-trigger)
     ;; reset to new-next-trigger
@@ -82,7 +82,7 @@
 	  new-next-trigger
 	  ;; reset this-length (for next sample)
 	  (this-length ly)
-	  (get-next-by-time (current-time ly) (length-list ly))
+	  (get-next-by-time (current-time ly) (list-of-durations ly))
 	  ;; maybe we don't want this here? choose soundfile again...
 	  (current-stored-file ly)
 	  (determine-new-stored-file ly))    
@@ -105,16 +105,16 @@
 		    (nth n (data (structure ly)))))
 	 (st (start (current-stored-file ly)))
 	 (len (length ls))
-	 (current 0) ;; current for new length-list
+	 (current 0) ;; current for new list-of-durations
 	 (last-trigger (loop for n from 0 and i = (nth (mod n len) ls)
 			  sum i into sum
 			  until (> sum current-time)
 			  finally (progn (setf current (mod (- n 1) len))
 					 (return (- sum i))))))
     (prog2
-	(progn (setf (n-for-length-list ly) n)
-	       (update-length-list ly current)
-	       (setf (this-length ly) (see-current (length-list ly)))
+	(progn (setf (n-for-list-of-durations ly) n)
+	       (update-list-of-durations ly current)
+	       (setf (this-length ly) (see-current (list-of-durations ly)))
 	       (setf (this-length ly)
 		     (- (this-length ly)
 			(- current-time
@@ -166,7 +166,20 @@
   (loop for ly in (data lys) collect
        (get-id ly)))
 
-;;; example
-(defparameter *layer1* (make-layer '1 *stored-file-list* *structure* 0))
+;; would be cool but obviously doesn't work for now:
+
+#|
+;; *** layers-to-txt
+;;; saves a layers object into a txt file, so you don't have to reload and
+;;; re-analyse all the samples when restarting the software.
+(defmethod layers-to-txt ((lys layers) &key (dir *src-dir*) (name "*layers*.txt"))
+  (with-open-file (stream (format nil "~a~a" dir name)
+			  :direction :output)
+    (format stream (write-to-string lys))))
+
+;; *** layers-from-txt
+;;; see above
+(defun layers-from-txt (path)
+  )|#
 
 ;;;; EOF layers.lsp

@@ -14,7 +14,7 @@
 (defun random-number (&optional seed)
   (make-instance 'random-number
 		 :data (if seed seed *seed*)
-		 :pcg (pcg::make-pcg :seed (if seed seed *seed*))))
+		 :pcg (pcg::make-pcg :seed (or seed *seed*))))
 
 ;;; set the global variable *random-number* to an instance of random-number
 (setf *random-number* (random-number))

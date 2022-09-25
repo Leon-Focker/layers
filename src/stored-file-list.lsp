@@ -1,5 +1,5 @@
 ;; ** stored-file-list
-;;;; storing and categorising soundfiles etc.
+;;;; sfl class, storing and categorising soundfiles etc.
 
 (in-package :layers)
 

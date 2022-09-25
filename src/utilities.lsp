@@ -45,6 +45,28 @@
 	    #-(or win32 win64) (format nil "/~a" device)
 	    rest)))
 
+;; *** unix-path
+;;; converts device-names ("/E/", "E:/") to unix format
+(defun os-path (path)
+  (let* ((new-path (substitute #\/ #\: path))
+	 (device (or (pathname-device path)
+		     (second (pathname-directory path))))
+	 (rest (subseq new-path (position #\/ new-path :start 1))))
+    (format nil "~a~a"
+	    (format nil "/~a" device)
+	    rest)))
+
+;; *** windows-path
+;;; converts device-names ("/E/", "E:/") to unix format
+(defun os-path (path)
+  (let* ((new-path (substitute #\/ #\: path))
+	 (device (or (pathname-device path)
+		     (second (pathname-directory path))))
+	 (rest (subseq new-path (position #\/ new-path :start 1))))
+    (format nil "~a~a"
+	    (format nil "~a:" device)
+	    rest)))
+
 ;; *** start-osc
 ;;; simple function to open the osc-call
 (defun start-osc ()
@@ -134,12 +156,13 @@
     (cdr list)
     (cons (car list) (remove-nth (1- n) (cdr list)))))
 
-;; *** alternating-modulo
+;; *** mirrors
+;;; formerly calles alternating-modulo
 ;;; mirrors input value between min and max value
-(defun alternating-modulo (value min max)
+(defun mirrors (value min max)
   (labels ((helper (val)
-	     (cond ((> val max) (- max (- val max)))
-		   ((< val min) (+ min (- min val)))
+	     (cond ((> val max) (helper (- max (- val max))))
+		   ((< val min) (helper (+ min (- min val))))
 		   (t val))))
     (helper value)))
 
