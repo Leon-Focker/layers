@@ -5,14 +5,14 @@
 #X obj 84 194 spigot;
 #X obj 123 177 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
 1;
-#X obj 176 156 loadbang;
-#X obj 78 118 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+#X obj 176 158 loadbang;
+#X obj 78 116 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
 -1;
 #X obj 14 10 inlet;
-#X obj 176 182 f \$1;
+#X obj 176 184 f \$1;
 #X obj 14 257 sampler;
 #X obj 84 257 sampler;
-#X floatatom 176 208 5 0 0 0 - - -;
+#X floatatom 176 210 5 0 0 0 - - -;
 #X obj 357 76 metro 10;
 #X floatatom 357 189 5 0 0 0 - - -;
 #X obj 357 105 f 0;
@@ -23,7 +23,7 @@
 #X obj 283 254 symbol;
 #X text 369 236 time since last sample was triggered;
 #X msg 283 228 clock-\$1;
-#X obj 136 31 list split 9;
+#X obj 136 29 list split 9;
 #X obj 111 97 spigot;
 #X obj 176 82 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
 1;

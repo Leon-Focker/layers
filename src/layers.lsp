@@ -5,7 +5,7 @@
 
 ;; *** layers
 ;;; new class layers, which represents the whole piece
-(defclass layers (base-object)
+(defclass layers (list-object)
   ())
 
 ;; *** make-layers
@@ -49,6 +49,8 @@
 
 ;; *** set-n
 ;;; change the n-for-list-of-durations value even while playing
+
+;;; !!! this should automatically check for the new next trigger and adjust the timer in pd
 (defmethod set-n (n layer-id (lys layers) current-time)
   (let* ((ly (handler-case (find-with-id layer-id (data lys))
 	       ;; if no layer with id is found, just take first one in list
@@ -93,7 +95,7 @@
     (list 'set-n layer-id (- new-next-trigger old-next-trigger))))
 
 ;; old code, not working. kept for now:
-#|(defmethod set-n (n layer-id (lys layers) current-time sample-run-time)
+#|(defmethod set- n(n layer-id (lys layers) current-time sample-run-time)
   (let* ((ly (loop for layer in (data lys) do
 		  (when (eq layer-id (get-id layer))
 		    (return layer))))
@@ -151,6 +153,7 @@
 	 (reset-index layer)
 	 (setf (play layer) t)
 	 (setf (current-time layer) 0)))
+  (setf *next-trigger* 0)
   (format t "~&Layers have been reset"))
 
 ;; *** reload-layers

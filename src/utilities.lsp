@@ -47,7 +47,7 @@
 
 ;; *** unix-path
 ;;; converts device-names ("/E/", "E:/") to unix format
-(defun os-path (path)
+(defun unix-path (path)
   (let* ((new-path (substitute #\/ #\: path))
 	 (device (or (pathname-device path)
 		     (second (pathname-directory path))))
@@ -58,7 +58,7 @@
 
 ;; *** windows-path
 ;;; converts device-names ("/E/", "E:/") to unix format
-(defun os-path (path)
+(defun windows-path (path)
   (let* ((new-path (substitute #\/ #\: path))
 	 (device (or (pathname-device path)
 		     (second (pathname-directory path))))
@@ -79,12 +79,14 @@
 
 ;; *** set-start-stop
 ;;; sets the global *start-stop* variable to t or nil (1 or 0 in pd)
-(defun set-start-stop (val)
-  (cond ((= val 0) (setf *start-stop* nil))
-	((= val 1) (setf *start-stop* t))
-	(t (error "~&set-start-stop got value ~a but needs either a 0 or 1"
-		  val)))
-  (format t "~& *start-stop* has been set to ~a" *start-stop*))
+(defun set-start-stop (val &optional time-left)
+  (prog1 (cond ((= val 0) (setf *start-stop* nil)
+		(setf *next-trigger* time-left)
+		(format t "~&*next-trigger was set to ~a" time-left))
+	       ((= val 1) (setf *start-stop* t) (set-timer 0.02))
+	       (t (error "~&set-start-stop got value ~a but needs either a 0 or 1"
+			 val)))
+    (format t "~& *start-stop* has been set to ~a" *start-stop*)))
 
 ;; *** set-loop
 ;;; sets the global *loop* variable to t or nil (1 or 0 in pd)
@@ -175,7 +177,7 @@
 ;; *** soundfile-duration
 ;;; get the duration of a soundfile in seconds
 (defun soundfile-duration (path)
-  (clm::mus-length path))
+  (clm::sound-duration path))
 
 ;; *** biggest-jump
 ;;; discrete derivation maximum i guess?

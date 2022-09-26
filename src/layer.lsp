@@ -16,10 +16,13 @@
 		     :initarg :last-stored-file :initform nil)
    (this-length :accessor this-length :initarg :this-length :initform 1)
    (last-length :accessor last-length :initarg :last-length :initform 1)
+   (remaining-duration :accessor remaining-duration :initarg :remaining-duration
+		       :initform 0)
    (structure :accessor structure :initarg :structure)
    (n-for-list-of-durations :accessor n-for-list-of-durations
 		      :initarg :n-for-list-of-durations :type integer)
-   (list-of-durations :accessor list-of-durations :initarg :list-of-durations :initform nil)
+   (list-of-durations :accessor list-of-durations :initarg :list-of-durations
+		      :initform nil)
    (play :accessor play :initarg :play :initform t)
    (current-time :accessor current-time :initarg :current-time :initform 0)
    (panorama :accessor panorama :initarg :panorama :initform 45)
@@ -32,6 +35,8 @@
   (declare (ignore initargs))
   (setf (current-stored-file ly) (first (data (stored-file-list ly)))
 	(last-stored-file ly) (current-stored-file ly)
+	(remaining-duration ly)
+	(this-length ly)
 	(list-of-durations ly)
 	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))))
 
@@ -120,7 +125,8 @@
 				    (id (stored-file-list ly)))))
 			(weird-values
 			 #'(lambda (c)
-			     (error (text c) 'get-sub-list-of-closest
+			     (error (text c)
+				    'get-sub-list-of-closest
 				    (id (stored-file-list ly))))))
 	   (cond (*use-sample-clouds*
 		(decide-for-snd-file
@@ -221,6 +227,8 @@
      (this-length ly)
      (this-length ly)
      (get-next-by-time (current-time ly) (list-of-durations ly))
+     (remaining-duration ly)
+     (this-length ly)
      ;; new-sample
      (current-stored-file ly)
      (determine-new-stored-file ly)
@@ -237,7 +245,9 @@
 	(list-of-durations ly)
 	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))
 	(this-length ly)
-	(see-current (list-of-durations ly))))
+	(see-current (list-of-durations ly))
+	(remaining-duration ly)
+	(this-length ly)))
 
 ;; *** reset-index
 ;;; sets current slot of the list-of-durations of a layer back to 0 (start of loop)
@@ -257,7 +267,7 @@
   (if (and (play ly) *start-stop*)
       (prog1
 	  (list
-	   'trigger
+	   'layer
 	   ;; layer id (which voice in PD to send to)
 	   (get-id ly)
 	   ;; soundfile
