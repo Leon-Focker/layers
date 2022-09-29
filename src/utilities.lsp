@@ -83,6 +83,7 @@
 ;; *** set-start-stop
 ;;; sets the global *start-stop* variable to t or nil (1 or 0 in pd)
 (defun set-start-stop (val &optional (time-left 0.02))
+  (declare (special *layers*))
   (unless *layers* (error "in set-start-stop, *layers* is nil"))
   (prog1 (cond ((= val 0) (setf *start-stop* nil)
 		(setf *next-trigger* (- *next-trigger* time-left))

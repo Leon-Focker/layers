@@ -11,14 +11,14 @@
 ;;; *layers* can only be an object of type layers
 (declaim (type layers *layers*))
 
-(defparameter *layers* (make-layers nil nil))
-
 ;; *** make-layers
 ;;; create a layers-object
 (defun make-layers (id list-of-layers)
   (make-instance 'layers
 		 :id id
 		 :data list-of-layers))
+
+(defparameter *layers* (make-layers nil nil))
 
 ;; *** add-layer-to-layers
 ;;; add a layer-object to the piece (layers-object)

@@ -12,7 +12,6 @@
 ;;;;   position (moving average?) as to not jump to a new position)
 ;;;;  -> smoothing factor adjustable in pd
 ;;;; while analysing soundfile, find better way to determine transients?
-;;;; when trying to auto-scale, check wheter x y z are actually set.
 ;;;; implement layers-into-txt
 ;;;; when a layer is triggered (even though the remaining-time is > 0.01) by next-trigger
 ;;;;  and trigger-all is t, it should not start at the begining of the sample but rather skipp

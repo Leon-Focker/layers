@@ -59,14 +59,20 @@
 
 ;; *** get-all
 ;;; gets list of all values in a slot of the stored-file ins stored-file-list
-(defmethod get-all (slot (sfl stored-file-list))
-  (loop for i in (data sfl) collect (funcall slot i)))
+(defmethod get-all (slot (sfl stored-file-list) &optional error)
+  (loop for sf in (data sfl)
+     do (when (and (not (funcall slot sf)) error)
+	  (error "get-all found no value for ~a in sf ~a" slot (id sf)))
+     collect (funcall slot sf)))
 
 ;; *** get-coordinates
 ;;; get coordinates of all stored-files in stored-file-list as '((x1 y1 z1 )...)
 (defmethod get-coordinates ((sfl stored-file-list))
-  (loop for sf in (data sfl) collect
-       (list (x sf) (y sf) (z sf))))
+  (loop for sf in (data sfl)
+     do (unless (and (x sf) (y sf) (z sf))
+	  (error "In get-coordinates, not all coordinates were given for sf: ~a"
+		 (id sf)))
+     collect (list (x sf) (y sf) (z sf))))
 
 ;; *** get-paths
 ;;; show all paths to all sounds on the sfl
@@ -96,12 +102,12 @@
 
 ;; *** auto-scale-mapping
 ;;; automatically scale all x, y and z values
-;;; to optimally fill out coordinate spate
+;;; to optimally fill out coordinate space
 (defmethod auto-scale-mapping ((sfl stored-file-list) &key remap)
   (let* ((len (length (data sfl)))
-	 (all-x (sort (get-all 'x sfl) #'<))
-	 (all-y (sort (get-all 'y sfl) #'<))
-	 (all-z (sort (get-all 'z sfl) #'<))
+	 (all-x (sort (get-all 'x sfl t) #'<))
+	 (all-y (sort (get-all 'y sfl t) #'<))
+	 (all-z (sort (get-all 'z sfl t) #'<))
 	 (x-min (first all-x))
 	 (y-min (first all-y))
 	 (z-min (first all-z))
@@ -109,7 +115,7 @@
 	 (y-max (car (last all-y)))
 	 (z-max (car (last all-z))))
     (if remap
-      (loop for i from 0 and sf in (data sfl) do
+      (loop for sf in (data sfl) do
 	   (setf (x sf) (/ (index-of-element (x sf) all-x) len)
 		 (y sf) (/ (index-of-element (y sf) all-y) len)
 		 (z sf) (/ (index-of-element (z sf) all-z) len)))
