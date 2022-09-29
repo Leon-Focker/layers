@@ -1,5 +1,5 @@
 ;; ** layer
-;;;; layer class - a lot of the magix is happening here
+;;;; layer class - a lot of the magic is happening here
 
 (in-package :layers)
 
@@ -15,11 +15,15 @@
    (last-stored-file :accessor last-stored-file
 		     :initarg :last-stored-file :initform nil)
    (this-length :accessor this-length :initarg :this-length :initform 1)
+   (play-length :accessor play-length :initarg :play-length :initform 1)
    (last-length :accessor last-length :initarg :last-length :initform 1)
+   (remaining-duration :accessor remaining-duration :initarg :remaining-duration
+		       :initform 0)
    (structure :accessor structure :initarg :structure)
-   (n-for-length-list :accessor n-for-length-list
-		      :initarg :n-for-length-list :type integer)
-   (length-list :accessor length-list :initarg :length-list :initform nil)
+   (n-for-list-of-durations :accessor n-for-list-of-durations
+		      :initarg :n-for-list-of-durations :type integer)
+   (list-of-durations :accessor list-of-durations :initarg :list-of-durations
+		      :initform nil)
    (play :accessor play :initarg :play :initform t)
    (current-time :accessor current-time :initarg :current-time :initform 0)
    (panorama :accessor panorama :initarg :panorama :initform 45)
@@ -32,8 +36,12 @@
   (declare (ignore initargs))
   (setf (current-stored-file ly) (first (data (stored-file-list ly)))
 	(last-stored-file ly) (current-stored-file ly)
-	(length-list ly)
-	(make-length-list (structure ly) (n-for-length-list ly))))
+	(play-length ly)
+	(this-length ly)
+	(remaining-duration ly)
+	(this-length ly)
+	(list-of-durations ly)
+	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))))
 
 ;; *** make-layer
 ;;; create a layer-object
@@ -43,7 +51,7 @@
 		 :id id
 		 :stored-file-list stored-file-list
 		 :structure structure
-		 :n-for-length-list n
+		 :n-for-list-of-durations n
 		 :this-length (first (nth n (data structure)))
 		 :panorama panorama
 		 :use-pan-of-layer use-pan-of-layer))
@@ -64,14 +72,14 @@
   (format t "~&Layer ID:          ~a ~
              ~&current soundfile: ~a ~
              ~&last soundfile:    ~a ~
-             ~&this-length:       ~a ~
+             ~&duration:          ~a ~
              ~&start:             ~a ~
              ~&play:              ~a"
           ;; ~&last in sfl:       ~a"
 	  (id ly)
 	  (get-id-current-file ly)
 	  (get-id-last-file ly)
-	  (this-length ly)
+	  (play-length ly)
 	  (start (current-stored-file ly))
 	  (play ly)
 	  ;; (get-id (last-played (stored-file-list ly)))
@@ -120,7 +128,8 @@
 				    (id (stored-file-list ly)))))
 			(weird-values
 			 #'(lambda (c)
-			     (error (text c) 'get-sub-list-of-closest
+			     (error (text c)
+				    'get-sub-list-of-closest
 				    (id (stored-file-list ly))))))
 	   (cond (*use-sample-clouds*
 		(decide-for-snd-file
@@ -172,7 +181,7 @@
 ;; *** get-next
 ;;; moves on to the next stored sound file
 (defmethod get-next ((ly layer))
-  (let ((next-len (see-next (length-list ly))))
+  (let ((next-len (see-next (list-of-durations ly))))
     (setf (last-stored-file ly)
 	  (current-stored-file ly)
 	  (current-time ly)
@@ -211,7 +220,7 @@
       (error "~&No markov-list found in current-stored-file ~a in Layer~a"
 	     (get-id (current-stored-file ly)) (get-id ly)))
     ;; make the playback stop when the structure has ended (and *loop* is nil)
-    (let ((ll (length-list ly)))
+    (let ((ll (list-of-durations ly)))
       (when (and (= (current ll) (1- (length (data ll)))) (not *loop*))
 	(setf (play ly) nil)))
     ;; set time for the next sample and then actually determine the new sample
@@ -220,13 +229,17 @@
      (last-length ly)
      (this-length ly)
      (this-length ly)
-     (get-next-by-time (current-time ly) (length-list ly))
+     (get-next-by-time (current-time ly) (list-of-durations ly))
+     (play-length ly)
+     (this-length ly)
+     (remaining-duration ly)
+     (this-length ly)
      ;; new-sample
      (current-stored-file ly)
      (determine-new-stored-file ly)
      )))
 
-;; *** update-slots
+;; *** update-layer
 ;;; updates the slots of a layer, when needed
 ;;; should maybe be called reset-layer?!
 (defmethod update-layer ((ly layer))
@@ -234,55 +247,62 @@
 	(first (data (stored-file-list ly)))
 	(last-stored-file ly)
 	(current-stored-file ly)
-	(length-list ly)
-	(make-length-list (structure ly) (n-for-length-list ly))
+	(list-of-durations ly)
+	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))
 	(this-length ly)
-	(see-current (length-list ly))))
+	(see-current (list-of-durations ly))
+	(play-length ly)
+	(this-length ly)
+	(remaining-duration ly)
+	(this-length ly)))
 
 ;; *** reset-index
-;;; sets current slot of the length-list of a layer back to 0 (start of loop)
+;;; sets current slot of the list-of-durations of a layer back to 0 (start of loop)
 (defmethod reset-index ((ly layer))
-  (setf (current (length-list ly)) 0)
+  (setf (current (list-of-durations ly)) 0)
   (format t "~& current timing index of layer ~a set to ~a"
-	  (get-id ly) (current (length-list ly))))
+	  (get-id ly) (current (list-of-durations ly))))
 
 ;; *** play-this
 ;;; sends list with all necessary information to pd, tsouo play
 ;;; the current stored-file
 (defmethod play-this ((ly layer) &key
-				   (printing t)
+				   (offset-start 0)
+				   (printing t) ;t
 				   (output-for-unix nil)
 				   (change-sampler t)
 				   (get-next t))
   (if (and (play ly) *start-stop*)
       (prog1
 	  (list
-	   'trigger
+	   'layer
 	   ;; layer id (which voice in PD to send to)
 	   (get-id ly)
 	   ;; soundfile
 	   (if (and *pd-on-windows*
 		    (not output-for-unix))
-	       (sc::string-replace "/E/"
-			       "E:/"
-			       (path (current-stored-file ly)))
-	       (path (if get-next (current-stored-file ly)
-			 (last-stored-file ly))))
+	       (windows-path
+		(path (if get-next (current-stored-file ly)
+			  (last-stored-file ly))))
+	       (unix-path
+		(path (if get-next (current-stored-file ly)
+			  (last-stored-file ly)))))
 	   ;; soundfile-length in seconds
-	   (this-length ly)
+	   (play-length ly)
 	   ;; start in seconds
 	   (mod
-	    (if (eq (start (current-stored-file ly)) 'random)
-	       (if (> (duration (current-stored-file ly)) (this-length ly))
-		   (random (- (duration (current-stored-file ly)) (this-length ly)))
-		   0)
-	       (start (current-stored-file ly)))
+	    (+ (if (eq (start (current-stored-file ly)) 'random)
+		   (if (> (duration (current-stored-file ly)) (this-length ly))
+		       (random (- (duration (current-stored-file ly)) (this-length ly)))
+		       0)
+		   (or (start (current-stored-file ly)) 0))
+	       offset-start)
 	    (duration (current-stored-file ly)))
 	   ;; attack in milliseconds
 	   10
 	   ;; decay in miliseconds
 	   (* 1000 ;; from seconds to miliseconds
-	      (let ((max-decay (see-next (length-list ly)))
+	      (let ((max-decay (see-next (list-of-durations ly)))
 		    (decay (decay (current-stored-file ly))))
 		(if (>= decay max-decay)
 		    max-decay
@@ -304,7 +324,6 @@
 		   (panorama (current-stored-file ly))))
 	   ;; change sampler or use same as last?
 	   (if change-sampler 1 0))
-	
 	(when printing (print-layer ly))
 	(when get-next (get-next ly)))
       (progn
@@ -313,9 +332,9 @@
 		(get-id ly)
 		(this-length ly)))))
 
-;; *** update-length-list
-(defmethod update-length-list ((ly layer) &optional (current 0))
-  (setf (length-list ly)
-	(make-length-list (structure ly) (n-for-length-list ly) current)))
+;; *** update-list-of-durations
+(defmethod update-list-of-durations ((ly layer) &optional (current 0))
+  (setf (list-of-durations ly)
+	(make-list-of-durations (structure ly) (n-for-list-of-durations ly) current)))
 
 ;;;; EOF layer.lsp

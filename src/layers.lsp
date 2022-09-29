@@ -1,12 +1,17 @@
 ;; ** layers
-;;;; the class to rule all classes
+;;;; the class to rule them all, a layers object basically represents a piece
 
 (in-package :layers)
 
 ;; *** layers
 ;;; new class layers, which represents the whole piece
-(defclass layers (base-object)
+(defclass layers (list-object)
   ())
+
+;;; *layers* can only be an object of type layers
+(declaim (type layers *layers*))
+
+(defparameter *layers* (make-layers nil nil))
 
 ;; *** make-layers
 ;;; create a layers-object
@@ -47,9 +52,141 @@
 	(error "~&there is no Layer with ID ~a in layers ~a"
 	       layer-id (get-id lys)))))
 
+;; *** next-trigger-for-layer
+;;; helper function for next-trigger and set-n
+(defun next-trigger-for-layer (remaining ly &key (index 1) (threshold 0.01))
+  (setf remaining (+ remaining (see-with-relative-index (list-of-durations ly) index)))
+  (if (> remaining threshold) remaining (next-trigger-for-layer remaining ly :index (+ index 1))))
+
+;; *** next-trigger
+;;; this function is called, when the timer within pure data reaches 0
+(defmethod next-trigger ((lys layers) &key current-time trigger-all)
+  ;; subtract current next-trigger from time until next trigger of each layer
+  ;; and look for the times until the next layer will be triggered
+  (let* ((next-triggers (loop for ly in (data lys)
+			   do (setf (remaining-duration ly)
+				    (- (remaining-duration ly) *next-trigger*))
+			   collect (let* ((remaining (remaining-duration ly)))
+				     (if (> remaining 0.01)
+					 remaining
+					 (next-trigger-for-layer remaining ly)))))
+	 (next-layers-triggered '()))
+    ;; here we decide which layers are to be triggered
+    ;; usually layers with remaining time < 0.01 are chosen.
+    ;; when palyback is started, all layers must be triggered
+    (setf next-layers-triggered
+	  (loop for ly in (data lys)
+	     ;; somehow the following doesn't work:
+	     do (when (> (remaining-duration ly) 0.01)
+	     	  (setf (play-length ly) (- (play-length ly) *next-trigger*)))
+	     when (or trigger-all (<= (remaining-duration ly) 0.01))
+	     collect ly))
+    ;; (format t "~&next-triggers: ~a" next-triggers)
+    ;; set *next-trigger* to the minimal time until the next layer needs one
+    (setf *next-trigger* (* 0.01 (round (* 100 (apply #'min next-triggers)))))
+    ;; set timer to next-trigger and send list of layers that will be triggered
+    (when current-time (format t "~&current-time: ~a" current-time))
+    (append
+     (list 'trigger *next-trigger*)
+     (loop for ly in next-layers-triggered append
+	  (play-this ly :offset-start (if (> (remaining-duration ly) 0.01)
+					  (- (this-length ly) (play-length ly))
+					  0))))))
+
 ;; *** set-n
-;;; change the n-for-length-list value even while playing
-(defmethod set-n (n layer-id (lys layers) current-time)
+;;; change the n-for-list-of-durations value even while playing
+
+;;; currently the timer can be set to a negative value which obviously should not happen
+;;; also not working whily playing, stoping and starting syncs again.
+(defmethod set-n (n layer-id (lys layers) current-time current-timer)
+  ;; look for the layer we want to change n for
+  (let* ((ly (handler-case (find-with-id layer-id (data lys))
+	       ;; if no layer with id is found, just take first one in list
+	       ;; to prevent this function crashing
+	       (id-not-found (c)
+		 (warn (text c))
+		 (first (data lys)))))
+	 ;; check and see if n is too big, then choose list-of-durations (ls)
+	 (ls (progn (when (>= n (length (data (structure ly))))
+		      (warn "~&n ~a is too big for structure of layer ~a"
+			    n layer-id)
+		      (setf n (- (length (data (structure ly))) 1)))
+		    (nth n (data (structure ly)))))
+	 ;; some neat variables
+	 (len (length ls))
+	 (current-duration-index 0)
+	 (new-next-trigger (loop for n from 0 and i = (nth (mod n len) ls)
+			      sum i into sum
+			      until (> sum current-time)
+			      finally (progn (setf current-duration-index
+						   (mod n len))
+					     (return sum))))
+	 ;; (old-next-trigger (current-time ly))
+	 (passed-timer (- *next-trigger* current-timer))
+	 (reset-timer-flag 0))
+    ;; store new n in layer
+    (setf (n-for-list-of-durations ly) n)
+    ;; setting "current-duration-index" should be obsolete, since the next length
+    ;; will be chosen by using the current-time anyways. but for good measure:
+    (update-list-of-durations ly current-duration-index)
+    ;; function get-next sets current time of layer to the time
+    ;; when the next sample will be triggered. (old-next-trigger)
+    ;; reset to new-next-trigger
+    (setf (current-time ly)
+	  new-next-trigger
+	  ;; set this-length according to current-time
+	  (this-length ly)
+	  (see-current (list-of-durations ly))
+	  ;; (get-next-by-time (print (current-time ly)) (list-of-durations ly))	  
+	  ;; set new play-length and remaining time (time between last and next general trigger)
+	  (play-length ly)
+	  (- new-next-trigger current-time)
+	  (remaining-duration ly)
+	  (+ passed-timer		; last-trigger until now
+	     (play-length ly))		; now until end of sample
+	  ;; choose soundfile again... maybe we don't want this here?
+	  (current-stored-file ly)
+	  (determine-new-stored-file ly))
+    (when (< (remaining-duration ly) 0)
+      (warn "something is off, remaining-duration is negative: ~a" (remaining-duration ly)))
+    ;; find new *next-trigger*
+    ;; next-triggers should use the next-trigger-for-layer function
+    (let* ((next-triggers (loop for ly in (data lys)
+			     collect (let* ((remaining (remaining-duration ly)))
+				       (if (> remaining passed-timer)
+					   remaining
+					   (next-trigger-for-layer
+					    remaining
+					    ly
+					    :threshold passed-timer)))))
+	   ;; when (> (remaining-duration ly)
+	   ;; passed-timer)
+	   ;; collect (remaining-duration ly)))
+	   (new (+ (* 0.01 (round (* 100 (apply #'min next-triggers))))
+		   passed-timer)))
+      (unless (= *next-trigger* new)
+	(incf reset-timer-flag 1)
+	(setf *next-trigger* new)))
+    ;; information what has happened:
+    (format t "~&n for Layer ~a has been set to ~a" layer-id n)
+    ;; finally tell PD what to do:
+    (format t "~&SET TIMER TO: ~a ~a" (- *next-trigger* current-timer) reset-timer-flag)
+    (prog1 (list 'set-n
+		 ;; time until next trigger
+		 (- *next-trigger* current-timer)
+		 ;; reset-timer in pd?
+		 reset-timer-flag
+		 ;; layer ID
+		 layer-id
+		 ;; remaining time for currently played file
+		 (- new-next-trigger current-time)
+		 ;; new decay
+		 (see-next (list-of-durations ly)))
+      (next-trigger *layers* :trigger-all t))))
+
+
+
+#+nil(defmethod set-n (n layer-id (lys layers) current-time current-timer)
   (let* ((ly (handler-case (find-with-id layer-id (data lys))
 	       ;; if no layer with id is found, just take first one in list
 	       ;; to prevent this function crashing
@@ -63,7 +200,7 @@
 			     (setf n (- (length (data (structure ly))) 1))))
 		    (nth n (data (structure ly)))))
 	 (len (length ls))
-	 (current 0) ;; current for new length-list
+	 (current 0) ;; current for new list-of-durations
 	 (new-next-trigger (loop for n from 0 and i = (nth (mod n len) ls)
 			  sum i into sum
 			  until (> sum current-time)
@@ -71,10 +208,10 @@
 					 (return sum))))
 	 (old-next-trigger (current-time ly)))
     ;; when resetting n, we need to tell lisp and the layer that we reset n:
-    (setf (n-for-length-list ly) n)
+    (setf (n-for-list-of-durations ly) n)
     ;; setting "current" should be obsolete, since the next length
     ;; will be chosen by using the current-time anyways. but for good measure:
-    (update-length-list ly current)
+    (update-list-of-durations ly current)
     ;; function get-next sets current time of layer to the time
     ;; when the next sample will be triggered. (old-next-trigger)
     ;; reset to new-next-trigger
@@ -82,7 +219,7 @@
 	  new-next-trigger
 	  ;; reset this-length (for next sample)
 	  (this-length ly)
-	  (get-next-by-time (current-time ly) (length-list ly))
+	  (get-next-by-time (current-time ly) (list-of-durations ly))
 	  ;; maybe we don't want this here? choose soundfile again...
 	  (current-stored-file ly)
 	  (determine-new-stored-file ly))    
@@ -93,7 +230,7 @@
     (list 'set-n layer-id (- new-next-trigger old-next-trigger))))
 
 ;; old code, not working. kept for now:
-#|(defmethod set-n (n layer-id (lys layers) current-time sample-run-time)
+#|(defmethod set- n(n layer-id (lys layers) current-time sample-run-time)
   (let* ((ly (loop for layer in (data lys) do
 		  (when (eq layer-id (get-id layer))
 		    (return layer))))
@@ -105,16 +242,16 @@
 		    (nth n (data (structure ly)))))
 	 (st (start (current-stored-file ly)))
 	 (len (length ls))
-	 (current 0) ;; current for new length-list
+	 (current 0) ;; current for new list-of-durations
 	 (last-trigger (loop for n from 0 and i = (nth (mod n len) ls)
 			  sum i into sum
 			  until (> sum current-time)
 			  finally (progn (setf current (mod (- n 1) len))
 					 (return (- sum i))))))
     (prog2
-	(progn (setf (n-for-length-list ly) n)
-	       (update-length-list ly current)
-	       (setf (this-length ly) (see-current (length-list ly)))
+	(progn (setf (n-for-list-of-durations ly) n)
+	       (update-list-of-durations ly current)
+	       (setf (this-length ly) (see-current (list-of-durations ly)))
 	       (setf (this-length ly)
 		     (- (this-length ly)
 			(- current-time
@@ -151,14 +288,16 @@
 	 (reset-index layer)
 	 (setf (play layer) t)
 	 (setf (current-time layer) 0)))
+  (setf *next-trigger* 0)
   (format t "~&Layers have been reset"))
 
 ;; *** reload-layers
 ;;; even better than a reset. reloads everything
 (defun reload-layers (&optional load-all)
-  (load *score-file*)
-  (when load-all (load-all))
-  nil)
+  (let ((score *score-file*))
+    (when load-all (load-all))
+    (load score)
+    nil))
 
 ;; *** get-ids
 ;;; get ids of all stored-files in stored-file-list
@@ -166,7 +305,20 @@
   (loop for ly in (data lys) collect
        (get-id ly)))
 
-;;; example
-(defparameter *layer1* (make-layer '1 *stored-file-list* *structure* 0))
+;; would be cool but obviously doesn't work for now:
+
+#|
+;; *** layers-to-txt
+;;; saves a layers object into a txt file, so you don't have to reload and
+;;; re-analyse all the samples when restarting the software.
+(defmethod layers-to-txt ((lys layers) &key (dir *src-dir*) (name "*layers*.txt"))
+  (with-open-file (stream (format nil "~a~a" dir name)
+			  :direction :output)
+    (format stream (write-to-string lys))))
+
+;; *** layers-from-txt
+;;; see above
+(defun layers-from-txt (path)
+  )|#
 
 ;;;; EOF layers.lsp

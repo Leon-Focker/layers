@@ -18,10 +18,10 @@
 (defparameter *start-stop* t)
 (defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
 (defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
-(defparameter *layers* '())
 
 ;; *** not for user (back end)
 (defparameter *random-number* nil)
+(defparameter *next-trigger* 0) ;; time until next sample(s) will be triggered in ms
 (defparameter *default-sample-dir*
   (format nil "~a~a" (sc::parent-dir (sc::parent-dir *src-dir*)) "/samples"))
 (defparameter *x-y-z-position* (vector 0 0 0))

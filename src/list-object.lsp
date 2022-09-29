@@ -41,4 +41,15 @@
 	       (setf n 0))
 	     (nth n data)))))
 
+;; *** see-with-relative-index
+;;; get an element from the list with index (+ current relative)
+;;; but don't change the current-slot
+(defmethod see-with-relative-index ((lo list-object) relative-index)
+  (when (data lo)
+    (let* ((data (data lo))
+	   (n (current lo)))
+      (progn (incf n relative-index)
+	     (setf n (mod n (length (data lo))))
+	     (nth n data)))))
+
 ;;;; EOF list-object.lsp

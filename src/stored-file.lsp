@@ -88,15 +88,15 @@
 (defun create-rest () (make-stored-file 'rest "/rest.wav" :markov '() :decay 0))
 
 ;;; example
-(make-stored-file
- 'noisy1
- "/rhythmic/noisy/1.wav"
- :markov '((noisy1 1)
-	   (noisy2 1)
-	   (noisy3 1)
-	   (noisy4 1)
-	   (noisy5 1))
- :decay 10)
+#+nil(make-stored-file
+      'noisy1
+      "/rhythmic/noisy/1.wav"
+      :markov '((noisy1 1)
+		(noisy2 1)
+		(noisy3 1)
+		(noisy4 1)
+		(noisy5 1))
+      :decay 10)
 
 ;; *** spectral-centroid
 ;;; centroid of soundfile. file can either be an array or the path to a file

@@ -404,7 +404,7 @@
  *drumloops*
  "/E/code/layers/samples/phrases/drums/"
  :decay 0.1
- :start 'random
+ :start 0 ; 'random
  :loop-flag 1
  :panorama 90
  )

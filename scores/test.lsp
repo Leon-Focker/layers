@@ -17,7 +17,7 @@
 			    :auto-map t
 			    :auto-scale-mapping t
 			    :remap t)
-
+#|
 (defparameter *one-shots* (make-stored-file-list 'one-shots '()))
 
 (folder-to-stored-file-list *one-shots*
@@ -41,7 +41,7 @@
 			    :decay 100
 			    :auto-map t)
 
-(auto-scale-mapping *one-shots* :remap t)
+(auto-scale-mapping *one-shots* :remap t)|#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +318,7 @@
   :z 1)
  *drums*)
 
-
+#|
 ;; ** accents
 
 (defparameter *accents* (make-stored-file-list 'accents '()))
@@ -736,10 +736,12 @@
   :loop-flag t
   :preferred-length '(15 25))
  *transformations*)
+|#
 
 ;; * structure
 
 ;;; make structure:
+
 
 (defparameter *structure*
   (make-structure '(2)

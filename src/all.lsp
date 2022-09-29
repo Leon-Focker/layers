@@ -6,15 +6,21 @@
 ;;;; build "sets" for songs, smoothly switch between sets, live transistions
 ;;;; one-time-use of samples? (eg. sample can only be played once every 3 mins)
 ;;;; dynamic panning
-;;;; when changing n of a layer whilst playing (set-n). each time a slight delay
-;;;;   is added to the layer (something aroung 20 ms). Probably happens in PD. where?
 ;;;; PD needs to be restarted after every reload. else some timings seem to be
 ;;;;   getting stuck. pls fix :c
 ;;;; (changing position in coordinate space in Pd, needs function that slowly adjusts
 ;;;;   position (moving average?) as to not jump to a new position)
-;;;; write layers into .txt to not reload and analyse every time
+;;;;  -> smoothing factor adjustable in pd
 ;;;; while analysing soundfile, find better way to determine transients?
 ;;;; when trying to auto-scale, check wheter x y z are actually set.
+;;;; implement layers-into-txt
+;;;; when a layer is triggered (even though the remaining-time is > 0.01) by next-trigger
+;;;;  and trigger-all is t, it should not start at the begining of the sample but rather skipp
+;;;;  the already played part. -> tried to implement but is bugged, see #'next-trigger
+;;;; better distinction between restart and reload
+;;;; currently playback doesn't end when loop isn't true
+;;;; set-n is implemented in a kinda dirty way (shouldn't have to call next-trigger) and
+;;;;  setting n introduces a small general delay it seems like.
 
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value
@@ -55,6 +61,7 @@
 		  "list-object.lsp"
 		  "markov.lsp"
 		  "length-dependant-list.lsp"
+		  "generate-structure.lsp"
 		  "structure.lsp"
 		  "stored-file.lsp"
 		  "stored-file-list.lsp"

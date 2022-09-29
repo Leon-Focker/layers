@@ -34,7 +34,7 @@
 			     (nth 5 sample)    ; decay
 			     (nth 6 sample)    ; amplitude
 			     (nth 7 sample)    ; loop-flag
-			     (nth 9 sample)))) ;panorama
+			     (nth 9 sample)))) ; panorama
 	   ;; set new time value for the last played layer
 	   do (setf times (swap-nth index (+ (nth index times)
 					     (nth 2 sample))
