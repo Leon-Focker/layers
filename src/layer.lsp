@@ -15,6 +15,7 @@
    (last-stored-file :accessor last-stored-file
 		     :initarg :last-stored-file :initform nil)
    (this-length :accessor this-length :initarg :this-length :initform 1)
+   (play-length :accessor play-length :initarg :play-length :initform 1)
    (last-length :accessor last-length :initarg :last-length :initform 1)
    (remaining-duration :accessor remaining-duration :initarg :remaining-duration
 		       :initform 0)
@@ -35,6 +36,8 @@
   (declare (ignore initargs))
   (setf (current-stored-file ly) (first (data (stored-file-list ly)))
 	(last-stored-file ly) (current-stored-file ly)
+	(play-length ly)
+	(this-length ly)
 	(remaining-duration ly)
 	(this-length ly)
 	(list-of-durations ly)
@@ -69,14 +72,14 @@
   (format t "~&Layer ID:          ~a ~
              ~&current soundfile: ~a ~
              ~&last soundfile:    ~a ~
-             ~&this-length:       ~a ~
+             ~&duration:          ~a ~
              ~&start:             ~a ~
              ~&play:              ~a"
           ;; ~&last in sfl:       ~a"
 	  (id ly)
 	  (get-id-current-file ly)
 	  (get-id-last-file ly)
-	  (this-length ly)
+	  (play-length ly)
 	  (start (current-stored-file ly))
 	  (play ly)
 	  ;; (get-id (last-played (stored-file-list ly)))
@@ -227,6 +230,8 @@
      (this-length ly)
      (this-length ly)
      (get-next-by-time (current-time ly) (list-of-durations ly))
+     (play-length ly)
+     (this-length ly)
      (remaining-duration ly)
      (this-length ly)
      ;; new-sample
@@ -246,6 +251,8 @@
 	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))
 	(this-length ly)
 	(see-current (list-of-durations ly))
+	(play-length ly)
+	(this-length ly)
 	(remaining-duration ly)
 	(this-length ly)))
 
@@ -260,7 +267,8 @@
 ;;; sends list with all necessary information to pd, tsouo play
 ;;; the current stored-file
 (defmethod play-this ((ly layer) &key
-				   (printing t)
+				   (offset-start 0)
+				   (printing t) ;t
 				   (output-for-unix nil)
 				   (change-sampler t)
 				   (get-next t))
@@ -280,14 +288,15 @@
 		(path (if get-next (current-stored-file ly)
 			  (last-stored-file ly)))))
 	   ;; soundfile-length in seconds
-	   (this-length ly)
+	   (play-length ly)
 	   ;; start in seconds
 	   (mod
-	    (if (eq (start (current-stored-file ly)) 'random)
-		(if (> (duration (current-stored-file ly)) (this-length ly))
-		    (random (- (duration (current-stored-file ly)) (this-length ly)))
-		    0)
-		(or (start (current-stored-file ly)) 0))
+	    (+ (if (eq (start (current-stored-file ly)) 'random)
+		   (if (> (duration (current-stored-file ly)) (this-length ly))
+		       (random (- (duration (current-stored-file ly)) (this-length ly)))
+		       0)
+		   (or (start (current-stored-file ly)) 0))
+	       offset-start)
 	    (duration (current-stored-file ly)))
 	   ;; attack in milliseconds
 	   10

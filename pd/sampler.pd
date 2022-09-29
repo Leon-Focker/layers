@@ -57,7 +57,7 @@
 -1 -1;
 #X obj 626 621 f;
 #X obj 626 673 line~;
-#X obj 728 723 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+#X obj 728 723 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X obj 24 738 spigot;
 #X text 1100 474 sampler id input;
@@ -120,7 +120,7 @@
 #X coords 0 -1 1 1 140 25 1 100 200;
 #X restore 152 392 pd timer;
 #X obj 24 273 t b b;
-#N canvas 973 287 592 398 timer 1;
+#N canvas 973 287 592 398 timer 0;
 #X obj 83 239 outlet;
 #X obj 10 9 inlet;
 #X floatatom 165 202 10 0 0 0 - - -;
@@ -184,6 +184,10 @@
 #X obj 728 768 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X obj 65 783 spigot;
+#X obj 965 169 inlet;
+#X obj 965 193 unpack f f;
+#X obj 1032 227 moses;
+#X text 1020 171 set-n;
 #X connect 0 0 1 0;
 #X connect 1 0 33 0;
 #X connect 1 1 34 0;
@@ -254,7 +258,9 @@
 #X connect 56 0 57 0;
 #X connect 56 1 48 0;
 #X connect 56 1 61 1;
+#X connect 56 1 87 1;
 #X connect 57 0 48 0;
+#X connect 57 0 87 1;
 #X connect 58 0 51 0;
 #X connect 59 0 75 0;
 #X connect 60 0 36 0;
@@ -287,3 +293,8 @@
 #X connect 82 0 83 0;
 #X connect 83 0 84 1;
 #X connect 84 0 73 0;
+#X connect 85 0 86 0;
+#X connect 86 0 59 1;
+#X connect 86 1 87 0;
+#X connect 87 0 48 0;
+#X connect 87 0 61 1;

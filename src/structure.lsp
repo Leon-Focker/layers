@@ -53,6 +53,7 @@
 
 ;; *** make-list-of-durations
 ;;; initialize a list-of-durations object
+
 (defmethod make-list-of-durations ((st structure) &optional (n 0) (current 0))
   (make-instance 'list-of-durations
 		 :data (nth n (data st))
@@ -61,7 +62,6 @@
 
 ;; *** get-next-by-time
 ;;; don't just get the next value in the list, use decider and the current time
-;;; then go by current time use 
 (defmethod get-next-by-time (current-time (ll list-of-durations))
   (when (data ll)
     (let* ((data (data ll)))

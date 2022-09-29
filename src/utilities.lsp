@@ -12,6 +12,9 @@
 (defgeneric get-id (base-object)
   (:documentation "returns the id of any object"))
 
+(defgeneric next-trigger (layers-object &key current-time trigger-all)
+  (:documentation "called for triggering new sounds"))
+
 (when *load-risky-files*
   (load (format nil "~a~a" *src-dir* "export-with-clm.lsp")))
 
@@ -74,16 +77,19 @@
 
 ;; *** layers-has-been-loaded
 ;;; function with no features whatsoever, other files can check wheter this one
-;;; (Layers.lsp) has been loaded by checking wheter this function is defined.
+;;; has been loaded by checking wheter this function is defined.
 (defun layers-has-been-loaded ())
 
 ;; *** set-start-stop
 ;;; sets the global *start-stop* variable to t or nil (1 or 0 in pd)
-(defun set-start-stop (val &optional time-left)
+(defun set-start-stop (val &optional (time-left 0.02))
+  (unless *layers* (error "in set-start-stop, *layers* is nil"))
   (prog1 (cond ((= val 0) (setf *start-stop* nil)
-		(setf *next-trigger* time-left)
+		(setf *next-trigger* (- *next-trigger* time-left))
 		(format t "~&*next-trigger was set to ~a" time-left))
-	       ((= val 1) (setf *start-stop* t) (set-timer 0.02))
+	       ((= val 1)
+		(setf *start-stop* t)
+		(next-trigger *layers* :trigger-all t))
 	       (t (error "~&set-start-stop got value ~a but needs either a 0 or 1"
 			 val)))
     (format t "~& *start-stop* has been set to ~a" *start-stop*)))
@@ -125,6 +131,22 @@
   (setf *x-y-z-position* (vector x y z))
   (when printing
     (format t "~& *x-y-z-position* has been set to ~a" *x-y-z-position*)))
+
+;; *** set-timer
+;;; sets timer within pure data to value in ms, usually next-trigger is used to do this.
+(defun set-timer (time)
+  (unless (numberp time) (error "time in set-timer must be a number"))
+  (list 'timer time))
+
+;; *** current-timer
+;;; can probably be deleted:
+;;; when offsetting the timer, this function is called to check, wheter triggers
+;;; need to be skipped (because they already should have happened) and another
+;;; offset needs to be added to the timer, because it currently is negative
+#+nil(defun current-timer (current-timer)
+  (unless (> current-timer 0)
+    (;; skip next trigger points and get new offset
+     (list 'timer-offset offset!!!!!!!!!!!!))))
 
 ;; *** decider
 ;;; gets (random) value as chooser between 0 and 1 and a list

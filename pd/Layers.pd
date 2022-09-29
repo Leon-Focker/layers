@@ -1,10 +1,10 @@
-#N canvas 2394 445 696 393 12;
+#N canvas 2057 356 696 393 12;
 #X obj 147 8 loadbang;
 #X floatatom 170 51 5 0 0 0 - - length;
 #X floatatom 111 44 5 0 0 0 - - seed;
 #X obj 1 1 cnv 15 460 75 empty empty empty 20 12 0 14 -99865 -66577
 0;
-#X obj 22 26 tgl 25 0 start empty empty 17 7 0 10 -262144 -1 -1 1 1
+#X obj 22 26 tgl 25 0 start empty empty 17 7 0 10 -262144 -1 -1 0 1
 ;
 #X obj 93 1 cnv 15 10 10 empty empty seed 20 12 0 14 -99865 -262144
 0;
@@ -28,30 +28,30 @@
 #X msg 113 27 23;
 #X obj 56 201 loadbang;
 #X obj 56 222 s init;
-#N canvas 105 220 1584 484 subpatch 0;
+#N canvas 105 220 1584 484 subpatch 1;
 #X obj 304 130 osc-sc-eval-5000;
-#N canvas 260 61 913 723 magic 1;
-#X obj 226 394 cyclone/fromsymbol;
-#X obj 250 367 cyclone/fromsymbol;
-#X obj 178 420 cyclone/fromsymbol;
-#X obj 274 340 cyclone/fromsymbol;
-#X obj 178 488 route 0 1 2 3 4 5;
+#N canvas 260 61 913 723 magic 0;
+#X obj 225 428 cyclone/fromsymbol;
+#X obj 249 401 cyclone/fromsymbol;
+#X obj 177 454 cyclone/fromsymbol;
+#X obj 273 374 cyclone/fromsymbol;
+#X obj 177 522 route 0 1 2 3 4 5;
 #X obj 33 19 inlet;
 #X obj 105 666 print lisp;
-#X obj 299 314 cyclone/fromsymbol;
-#X obj 323 287 cyclone/fromsymbol;
-#X obj 347 260 cyclone/fromsymbol;
-#X obj 395 234 cyclone/fromsymbol;
-#X obj 197 618 sample-pair 1;
-#X obj 216 595 sample-pair 2;
-#X obj 236 572 sample-pair 3;
-#X obj 255 549 sample-pair 4;
-#X obj 274 526 sample-pair 5;
-#X obj 178 180 unpack s s s s s s s s s s s, f 35;
-#X obj 178 458 pack f s f f f f f f s f f, f 35;
-#X obj 420 209 cyclone/fromsymbol;
-#X obj 251 89 cyclone/fromsymbol;
-#X obj 251 119 s timer-offset;
+#X obj 298 348 cyclone/fromsymbol;
+#X obj 322 321 cyclone/fromsymbol;
+#X obj 346 294 cyclone/fromsymbol;
+#X obj 394 268 cyclone/fromsymbol;
+#X obj 196 652 sample-pair 1;
+#X obj 215 629 sample-pair 2;
+#X obj 235 606 sample-pair 3;
+#X obj 254 583 sample-pair 4;
+#X obj 273 560 sample-pair 5;
+#X obj 177 214 unpack s s s s s s s s s s s, f 35;
+#X obj 177 492 pack f s f f f f f f s f f, f 35;
+#X obj 419 243 cyclone/fromsymbol;
+#X obj 321 80 cyclone/fromsymbol;
+#X obj 321 110 s timer-offset;
 #X obj 33 103 s sc;
 #N canvas 1037 149 411 435 trigger 0;
 #X obj 60 45 inlet;
@@ -94,9 +94,40 @@
 #X connect 15 0 7 1;
 #X connect 15 0 14 0;
 #X connect 17 1 16 0;
-#X restore 178 150 pd trigger;
+#X restore 177 184 pd trigger;
 #X obj 92 19 print input;
-#X obj 33 50 route LAYERS PRINT TRIGGER TIMER-OFFSET, f 42;
+#X obj 33 50 route LAYERS PRINT TRIGGER SET-N TIMER-OFFSET, f 52;
+#N canvas 841 144 565 603 set-n 0;
+#X obj 60 45 inlet;
+#X obj 60 314 cyclone/fromsymbol;
+#X obj 60 366 s set-timer;
+#X obj 60 389 print timer;
+#X obj 60 93 list split 2;
+#X obj 60 265 unpack s s;
+#X obj 127 292 cyclone/fromsymbol;
+#X obj 60 338 spigot;
+#X obj 100 119 unpack s s s;
+#X obj 140 165 cyclone/fromsymbol;
+#X obj 181 143 cyclone/fromsymbol;
+#X obj 100 187 cyclone/fromsymbol;
+#X obj 100 212 pack f f f, f 12;
+#X obj 100 236 outlet;
+#X connect 0 0 4 0;
+#X connect 1 0 7 0;
+#X connect 4 0 5 0;
+#X connect 4 1 8 0;
+#X connect 5 0 1 0;
+#X connect 5 1 6 0;
+#X connect 6 0 7 1;
+#X connect 8 0 11 0;
+#X connect 8 1 9 0;
+#X connect 8 2 10 0;
+#X connect 9 0 12 1;
+#X connect 10 0 12 2;
+#X connect 11 0 12 0;
+#X connect 12 0 13 0;
+#X restore 249 110 pd set-n;
+#X obj 249 137 route 0 1 2 3 4 5;
 #X connect 0 0 17 2;
 #X connect 1 0 17 3;
 #X connect 2 0 17 0;
@@ -129,7 +160,14 @@
 #X connect 22 0 16 0;
 #X connect 24 1 6 0;
 #X connect 24 2 22 0;
-#X connect 24 3 19 0;
+#X connect 24 3 25 0;
+#X connect 24 4 19 0;
+#X connect 25 0 26 0;
+#X connect 26 1 11 1;
+#X connect 26 2 12 1;
+#X connect 26 3 13 1;
+#X connect 26 4 14 1;
+#X connect 26 5 15 1;
 #X restore 304 179 pd magic;
 #N canvas 574 260 450 300 midi 0;
 #X floatatom 9 72 5 0 0 0 - - midi1;
@@ -229,7 +267,7 @@
 #X msg 25 87 (set-start-stop \$1 \$2);
 #X obj 25 63 pack f f;
 #X obj 132 44 r timer;
-#N canvas 375 287 1248 406 set-n 0;
+#N canvas 714 329 1248 406 set-n 0;
 #X obj 40 15 r n-1;
 #X obj 40 41 t f b;
 #X msg 72 67 1;
@@ -256,9 +294,10 @@
 #X obj 476 134 f;
 #X obj 407 134 f;
 #X obj 338 134 f;
-#X obj 13 143 r clock;
-#X obj 86 185 pack f f f;
-#X msg 86 211 (set-n \$1 '\$2 *layers* \$3);
+#X obj 152 160 r clock;
+#X obj 86 185 pack f f f f;
+#X obj 213 161 r timer;
+#X msg 86 211 (set-n \$1 '\$2 *layers* \$3 \$4);
 #X connect 0 0 1 0;
 #X connect 1 0 27 0;
 #X connect 1 1 2 0;
@@ -290,8 +329,9 @@
 #X connect 19 0 24 1;
 #X connect 20 0 23 1;
 #X connect 26 0 27 2;
-#X connect 27 0 28 0;
-#X connect 28 0 15 0;
+#X connect 27 0 29 0;
+#X connect 28 0 27 3;
+#X connect 29 0 15 0;
 #X restore 313 116 pd set-n;
 #X msg 23 288 (reload-layers t);
 #X connect 1 0 2 0;
@@ -443,13 +483,13 @@
 0;
 #X obj 45 159 vu 15 120 meter1 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 19 151 vsl 15 128 0 1 0 0 fader1 midi1 empty 0 -9 0 10 -262144
--1 -1 0 1;
+-1 -1 6000 1;
 #X obj 132 158 vu 15 120 meter2 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 107 151 vsl 15 128 0 1 0 0 fader2 midi2 empty 0 -9 0 10 -262144
--1 -1 0 1;
+-1 -1 4800 1;
 #X obj 220 158 vu 15 120 meter3 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 195 151 vsl 15 128 0 1 0 0 fader3 midi3 empty 0 -9 0 10 -262144
--1 -1 8000 1;
+-1 -1 0 1;
 #X obj 308 158 vu 15 120 meter4 empty -1 -8 0 10 -66577 -1 1 0;
 #X obj 283 151 vsl 15 128 0 1 0 0 fader4 midi4 empty 0 -9 0 10 -262144
 -1 -1 0 1;
@@ -486,7 +526,7 @@
 #X obj 19 308 hradio 15 1 0 5 n-1 empty empty 0 -8 0 10 -262144 -1
 -1 0;
 #X obj 107 308 hradio 15 1 0 5 n-2 empty empty 0 -8 0 10 -262144 -1
--1 0;
+-1 1;
 #X obj 196 308 hradio 15 1 0 5 n-3 empty empty 0 -8 0 10 -262144 -1
 -1 1;
 #X obj 283 308 hradio 15 1 0 5 n-4 empty empty 0 -8 0 10 -262144 -1

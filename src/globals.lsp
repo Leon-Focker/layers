@@ -18,7 +18,6 @@
 (defparameter *start-stop* t)
 (defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
 (defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
-(defparameter *layers* '())
 
 ;; *** not for user (back end)
 (defparameter *random-number* nil)
