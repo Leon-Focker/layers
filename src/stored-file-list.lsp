@@ -43,8 +43,9 @@
 (defmethod decide-for-snd-file ((sub-sfl subordinate-stored-file-list)
 				random-number)
   (let* ((weights '())
-	 (ids '()))
-    (loop for i in (data sub-sfl) do
+	 (ids '())
+	 (ls (sort (data sub-sfl) #'(lambda (x y) (> (car x) (car y))))))
+    (loop for i in ls do
 	 (push (car i) weights)
 	 (push (get-id (cadr i)) ids))
     (nth (decider random-number
@@ -148,12 +149,23 @@
 
 ;; *** folder-to-stored-file-list
 ;;; bunch-add all soundfiles in a folder to a stored-file-list
+;;; auto-map - analyzes and maps the file automatically in a x y z space
+;;; f1, f2, f3 are the mapping functions for x y z, leave them nil for default
+;;; fft-size must be a power of 2 and starts at the beginning of the sample
+;;;   when fft-size is nil, the biggest one possible is chosen
+;;; auto-scale-mapping - scales all mapping values to range from 0 to 1
+;;; remap - allows for rearranging of the files within the x y z space
 (defmethod folder-to-stored-file-list ((sfl stored-file-list)
 				       folder
 				       &key
 					 id-uniquifier
 					 markov-list
+					 analyse
 					 auto-map
+					 f1
+					 f2
+					 f3
+					 fft-size
 					 auto-scale-mapping
 					 remap
 					 (start 0)
@@ -186,9 +198,12 @@
 			 :directory ""
 			 :panorama panorama
 			 :loop-flag loop-flag)))
-		(if auto-map
-		    (map-soundfile sf)
-		    sf))
+		(cond ((and analyse (not auto-map))
+		       (analyse-soundfile sf))
+		      (auto-map
+		       (map-soundfile sf :f1 f1 :f2 f2 :f3 f3
+				      :fft-size fft-size))
+		      (t sf)))
 	    (format t "~&storing file: ~a" id))
 	  sfl))
     (when auto-scale-mapping
@@ -238,5 +253,28 @@
 		 (< (min x y z) 0))
 	 (warn "~&found x, y or z value that is not in bounds 0 - 1 in sfl ~a"
 	       (get-id sfl)))))
+
+;; *** make-load-form
+(defmethod make-load-form ((sfl stored-file-list) &optional environment)
+  (declare (ignore environment))
+  `(make-instance 'stored-file-list
+		  :id ',(id sfl)
+		  :data ,(cons 'list
+				 (loop for sf in (data sfl) collect
+				      (make-load-form sf)))
+		  :length-min ',(length-min sfl)
+		  :length-max ',(length-max sfl)
+		  ;;:sfl-when-shorter ',(sfl-when-shorter sfl)
+		  ;;:sfl-when-longer ',(sfl-when-longer sfl)
+		  ;;:last-played ',(last-played sfl)
+		  ))
+
+;; *** store-in-text-file
+;;; store a sfl in a text file, so the analysis can be skipped by reading in
+;;; the soundfiles.
+(defmethod store-in-text-file ((sfl stored-file-list) &optional file)
+  (let* ((file (or file (format nil "~a~a-load-file.txt" *src-dir* (id sfl)))))
+    (sc::write-to-file file (make-load-form sfl))
+    (format t "~&wrote ~a into ~a" (id sfl) file)))
 
 ;;;; EOF stored-file-list.lsp

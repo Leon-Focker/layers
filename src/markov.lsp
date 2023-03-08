@@ -35,4 +35,11 @@
 		 ls)
 		(data ml))))))
 
+;; *** make-load-file
+(defmethod make-load-file ((ml markov-list) &optional environment)
+    (declare (ignore environment))
+    `(make-instance 'markov-list
+		    :id ',(id ml)
+		    :data ',(data ml)))
+
 ;;;; EOF markov.lsp

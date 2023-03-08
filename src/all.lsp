@@ -12,14 +12,20 @@
 ;;;;   position (moving average?) as to not jump to a new position)
 ;;;;  -> smoothing factor adjustable in pd
 ;;;; while analysing soundfile, find better way to determine transients?
-;;;; implement layers-into-txt
 ;;;; when a layer is triggered (even though the remaining-time is > 0.01) by next-trigger
 ;;;;  and trigger-all is t, it should not start at the begining of the sample but rather skipp
 ;;;;  the already played part. -> tried to implement but is bugged, see #'next-trigger
 ;;;; better distinction between restart and reload
-;;;; currently playback doesn't end when loop isn't true
 ;;;; set-n is implemented in a kinda dirty way (shouldn't have to call next-trigger) and
-;;;;  setting n introduces a small general delay it seems like.
+;;;;  setting n introduces a small general delay, it seems like.
+
+;;;; reset-layers should actually reset structure etc without having to reload
+;;;; what does it currently reset-to?
+
+;;;; make-load-file for sfl: :sfl-when-longer and :sfl-when-shorter and :last-played
+;;;; are not saved yet. They should link to an existing sfl/sf, not create a new one.
+
+;;;; #'get-list-of-clm-calls needs a rework
 
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value
@@ -37,8 +43,44 @@
 
 (in-package :layers)
 
+(unless (find-package :cl-pcg)
+  (ql:quickload :cl-pcg))
+
+(unless (find-package :slippery-chicken)
+  (error "Package Slippery Chicken is needed but couldn't be found"))
+
+(unless (fboundp 'os-path)
+  (defun os-path (path)
+    (let* ((new-path (substitute #\/ #\: path))
+	   (device (if (char= #\/ (elt path 0))
+		       (second (pathname-directory path))
+		       (format nil "~{~a~}"
+			       (loop with break until break for i from 0 collect
+				    (let ((this (elt path i))
+					  (next (elt path (1+ i))))
+				      (when (or (char= #\: next)
+						(char= #\/ next))
+					(setf break t))
+				      this)))))
+	   (helper (subseq new-path (1+ (position #\/ new-path :start 1))))
+	   (rest (if (char= #\/ (elt helper 0))
+		     helper
+		     (format nil "/~a" helper))))
+      #+(or win32 win64) (format nil "~a:~a" device rest)
+      #-(or win32 win64) (format nil "/~a~a" device rest))))
+
+(unless (fboundp 'directory-name)
+  (defun directory-name (path)
+    (when (> (length path) 0)
+      (loop until (char= #\/ (elt path (1- (length path)))) do
+	    (setf path (subseq path 0 (1- (length path)))))
+      path)))
+
+(defun parent-dir (path)
+  (subseq path 0 (position #\/ path :from-end t)))
+
 (defparameter *src-dir*
-  (sc::trailing-slash (directory-namestring *load-pathname*)))
+  (os-path (directory-name (namestring *load-pathname*))))
 
 (defun quiet-warning-handler (c)
   (let ((r (find-restart 'muffle-warning c)))
@@ -46,9 +88,10 @@
       (invoke-restart r))))
 
 ;; clm makes a lot of annoying warnings :c
-(handler-bind ((warning
-		#'quiet-warning-handler))
-  (load (compile-file (format nil "~a~a" *src-dir* "analysis.lsp"))))
+(when (ignore-errors clm::*clm*)
+  (handler-bind ((warning
+		  #'quiet-warning-handler))
+    (load (compile-file (format nil "~a~a" *src-dir* "analysis.lsp")))))
 
 ;; *** load-all
 ;;; load most of the files
@@ -70,5 +113,13 @@
     (load (probe-file (format nil "~a~a" *src-dir* file))))
   (format t "~&finished loading!"))
 (load-all)
+
+(when (ignore-errors clm::*clm*)
+  (handler-bind ((warning
+		  #'quiet-warning-handler))
+    (load (compile-file (format nil "~a~a" *src-dir* "export-with-clm.lsp")))))
+
+(let ((pack (find-package :layers)))
+  (do-all-symbols (sym pack) (when (eql (symbol-package sym) pack) (export sym))))
 
 ;;;; EOF all.lsp

@@ -181,6 +181,7 @@
 ;; *** get-next
 ;;; moves on to the next stored sound file
 (defmethod get-next ((ly layer))
+  (unless ly (error "in get-next, the layer object is nil"))
   (let ((next-len (see-next (list-of-durations ly))))
     (setf (last-stored-file ly)
 	  (current-stored-file ly)
@@ -272,7 +273,7 @@
 				   (output-for-unix nil)
 				   (change-sampler t)
 				   (get-next t))
-  (if (and (play ly) *start-stop*)
+  (if (and (or *loop* (play ly)) *start-stop*)
       (prog1
 	  (list
 	   'layer
@@ -326,8 +327,39 @@
 	   (if change-sampler 1 0))
 	(when printing (print-layer ly))
 	(when get-next (get-next ly)))
-      (progn
-	(setf (play ly) t)
+      (prog1
+	  (list
+	   'layer
+	   ;; layer id (which voice in PD to send to)
+	   (get-id ly)
+	   ;; soundfile
+	   (if (and *pd-on-windows*
+		    (not output-for-unix))
+	       (windows-path
+		(path (if get-next (current-stored-file ly)
+			  (last-stored-file ly))))
+	       (unix-path
+		(path (if get-next (current-stored-file ly)
+			  (last-stored-file ly)))))
+	   ;; soundfile-length in seconds
+	   0
+	   ;; start in seconds
+	   0
+	   ;; attack in milliseconds
+	   0
+	   ;; decay in miliseconds
+	   0
+	   ;; amplitude
+	   0
+	   ;; loop-flag
+	   0
+	   ;; soundfile-id (displayed in PD)
+	   "stopped"
+	   ;; panning
+	   45
+	   ;; change sampler or use same as last?
+	   0)
+	;; (setf (play ly) t)
 	(format t "~&Playback for layer ~a ends now, last sound was ~a seconds"
 		(get-id ly)
 		(this-length ly)))))

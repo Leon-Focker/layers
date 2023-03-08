@@ -37,16 +37,27 @@
   ((text :initarg :text :reader text)))
 
 ;; *** os-path
-;;; converts device-names ("/E/", "E:/") according to current platfrom
-(defun os-path (path)
-  (let* ((new-path (substitute #\/ #\: path))
-	 (device (or (pathname-device path)
-		     (second (pathname-directory path))))
-	 (rest (subseq new-path (position #\/ new-path :start 1))))
-    (format nil "~a~a"
-	    #+(or win32 win64) (format nil "~a:" device)
-	    #-(or win32 win64) (format nil "/~a" device)
-	    rest)))
+;;; aims to automatically convert a linux or windows type path into the correct one
+;;; for the current platform
+(unless (fboundp 'os-path)
+  (defun os-path (path)
+    (let* ((new-path (substitute #\/ #\: path))
+	   (device (if (char= #\/ (elt path 0))
+		       (second (pathname-directory path))
+		       (format nil "~{~a~}"
+			       (loop with break until break for i from 0 collect
+				    (let ((this (elt path i))
+					  (next (elt path (1+ i))))
+				      (when (or (char= #\: next)
+						(char= #\/ next))
+					(setf break t))
+				      this)))))
+	   (helper (subseq new-path (1+ (position #\/ new-path :start 1))))
+	   (rest (if (char= #\/ (elt helper 0))
+		     helper
+		     (format nil "/~a" helper))))
+      #+(or win32 win64) (format nil "~a:~a" device rest)
+      #-(or win32 win64) (format nil "/~a~a" device rest))))
 
 ;; *** unix-path
 ;;; converts device-names ("/E/", "E:/") to unix format
@@ -70,6 +81,10 @@
 	    (format nil "~a:" device)
 	    rest)))
 
+;;; *** load-from-file
+(defmethod load-from-file (file)
+  (eval (sc::read-from-file file)))
+
 ;; *** start-osc
 ;;; simple function to open the osc-call
 (defun start-osc ()
@@ -86,8 +101,7 @@
   (declare (special *layers*))
   (unless *layers* (error "in set-start-stop, *layers* is nil"))
   (prog1 (cond ((= val 0) (setf *start-stop* nil)
-		(setf *next-trigger* (- *next-trigger* time-left))
-		(format t "~&*next-trigger was set to ~a" time-left))
+		(setf *next-trigger* (- *next-trigger* time-left)))
 	       ((= val 1)
 		(setf *start-stop* t)
 		(next-trigger *layers* :trigger-all t))
@@ -238,6 +252,27 @@
 	   (setf sum 0)))
     (reverse new)))
 
+;; *** list-interp
+;;; looks at a list as a series of y values, spaced equally from 0 to max-x
+;;; give any rational x to return interpolated result between two y values
+(defun list-interp (x list &optional (max-x (1- (length list))))
+  (let* ((len (1- (length list)))
+	 last-y
+	 next-y
+	 inter)
+    (cond ((<= x 0) (first list))
+	  ((>= x max-x) (car (last list)))
+	  (t (setf last-y (nth (floor (* (/ x max-x) len)) list)
+		   next-y (nth (ceiling (* (/ x max-x) len )) list)
+		   inter (mod (* (/ x max-x) len) 1))
+	     (+ (* inter next-y)
+		(* (- 1 inter) last-y))))))
+
+;; *** make-list-into-function
+;;; curried list-interp
+(defun make-list-into-function (list duration &optional last-at-what-x)
+  (lambda (x) (list-interp x list duration)))
+
 ;; *** flatness
 ;;; this might not be useful at all for anything but spectra
 (defun list-flatness (ls)
@@ -263,8 +298,9 @@
     res))
 
 ;; *** lists-to-midi
-;;; write pitch duration and start-times into a midi-file
-;;; longest list determindes length of the file, other lists get modulo
+;;; generate a midi file from lists of starting points, length, pitch...
+;;; if one list is shorter than others it will be wrapped (mod)
+;;; if the start-time-list is empty, (events-update-time) will be called
 (defun lists-to-midi (pitch-list duration-list start-time-list
 		      &key
 			velocity-list
@@ -274,30 +310,32 @@
   (when (or (null pitch-list) (null duration-list))
     (error "please provide at least one value in the pitch and the duration ~
             lists in lists-to-midi"))
-  (let* ((start start-time-list)
-	 (pitch-len (length pitch-list))
+  (let* ((pitch-len (length pitch-list))
 	 (duration-len (length duration-list))
 	 (start-len (length start-time-list))
 	 (velo (or velocity-list '(0.7)))
 	 (velo-len (length velo))
 	 (how-many (apply #'max (list pitch-len duration-len start-len)))
-	 (events (loop for i below how-many collect
-		      (let* ((start-time (when start
-					   (nth (mod i start-len)
-						start-time-list)))
-			     (pitch (nth (mod i pitch-len) pitch-list))
-			     (duration (nth (mod i duration-len) duration-list))
-			     (velocity (nth (mod i velo-len) velo)))
-			(sc::make-event pitch
-					duration
-					:start-time start-time
-					:duration t
-					:amplitude velocity)))))
-    (unless start (sc::events-update-time events))
+	 (events (loop for i below how-many
+		       for start-time = (when start-time-list
+					  (nth (mod i start-len)
+					       start-time-list))
+		       for pitch = (nth (mod i pitch-len) pitch-list)
+		       for duration = (nth (mod i duration-len) duration-list)
+		       for velocity = (nth (mod i velo-len) velo)
+		       collect
+		       (sc::make-event (if (numberp pitch)
+					   (sc::midi-to-note pitch)
+					   pitch)
+				       duration
+				       :start-time start-time
+				       :duration t
+				       :amplitude velocity))))
+    (unless start-time-list (sc::events-update-time events))
     (sc::event-list-to-midi-file
      events
      :start-tempo tempo
-     :midi-file (format nil "~a~a~a" (or dir *src-dir*) "/" name))))
+     :midi-file (print (format nil "~a~a" (or dir *src-dir*) name)))))
 
 ;; *** structure-to-midi
 (defun structure-to-midi (structure &key n dir)
@@ -351,37 +389,39 @@
     centroid))
 
 ;; *** visualize stuff :)
-;;; aray or list as input
-(defun visualize (ls &key scaler (start 0) abs scale)
+;;; array or list as input
+(defun visualize (ls &key y-range (start 0) abs (scale t))
   (when (arrayp ls)
     (setf ls (loop for i across ls collect i)))
   (when abs (setf ls (loop for i in ls collect (abs i))))
   (let* ((matrix (make-array '(64 17) :initial-element 0.0))
 	 (maxi (apply #'max (mapcar #'abs ls)))
-	 (scaler (if scaler scaler
-		     (if (= maxi 0) 1 maxi)))
+	 (y-range (if y-range y-range
+		      (if (= maxi 0) 1 maxi)))
 	 (len (length ls))
-	 (size (if (or scale (>= len 64)) 64 len)))
+	 (size (if (or scale (>= (- len start) 64)) 64 (- len start))))
     (loop for i from start below (+ size start) do
 	 (loop for j below 17 do
 	      (if (= (round (+ (* (/ (nth (mod (floor
 						(+ start
-						   (* (/ i size)
-						      (- len start))))
+						   (if scale
+						       (* (/ i size)
+							  (- len start))
+						       i)))
 					       len)
 					  ls)
-				     scaler)
+				     y-range)
 				  8 (if abs 2 1))
 			       (* 8 (if abs 0 1))))
 		     j)
 		  (setf (aref matrix (- i start) j) 1)
 		  (setf (aref matrix (- i start) j) 0))))
     (loop for j downfrom 16 to 0 do
-	 (print  (apply 'concatenate 'string
-			(loop for i below 64 collect
-			     (if (= (aref matrix i j)  1)
-				 "_"
-				 " ")))))
+	 (print (apply 'concatenate 'string
+		       (loop for i below 64 collect
+			    (if (= (aref matrix i j)  1)
+				"_"
+				" ")))))
     "=)"))
 
 ;; *** taylor-polynom

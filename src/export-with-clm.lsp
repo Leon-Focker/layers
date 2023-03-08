@@ -1,13 +1,13 @@
-(in-package :sc)	   
+(in-package :ly)	   
 
 (defun swap-nth (n value ls)
   (loop for i from 0 and j in ls collect
-       (if (= i n) value j)))
+	(if (= i n) value j)))
 
 ;; *** get-list-of-clm-calls
 ;;; get a list of lists, containing all information needed to feed
 ;;; Michael Edwards' samp1 and render layers as a .wav file
-(defun get-list-of-clm-calls (layers &key (reset-layers t))
+(defun get-list-of-clm-calls (layers &key (reset-layers nil))
   (when reset-layers (reset-layers layers))
   (let* ((hm-layers (length (data layers)))
 	 (times (loop repeat hm-layers collect 0))) ; list of times the respective layers are at
@@ -25,19 +25,19 @@
 				   :output-for-unix t)
 	   collect (unless break
 		     (when sample
-		       (list (first sample)    ; layer-id
+		       (list (nth 1 sample)    ; layer-id
 			     (nth index times) ; time
-			     (second sample)   ; file
-			     (third sample)    ; duration
-			     (nth 3 sample)    ; start
-			     (nth 4 sample)    ; attack
-			     (nth 5 sample)    ; decay
-			     (nth 6 sample)    ; amplitude
-			     (nth 7 sample)    ; loop-flag
-			     (nth 9 sample)))) ; panorama
+			     (nth 2 sample)    ; file
+			     (nth 3 sample)    ; duration
+			     (nth 4 sample)    ; start
+			     (nth 5 sample)    ; attack
+			     (nth 6 sample)    ; decay
+			     (nth 7 sample)    ; amplitude
+			     (nth 8 sample)    ; loop-flag
+			     (nth 10 sample)))) ; panorama
 	   ;; set new time value for the last played layer
 	   do (setf times (swap-nth index (+ (nth index times)
-					     (nth 2 sample))
+					     (nth 3 sample))
 				    times))
 	     (when (>= min-val (* *total-length* 0.995)) (setf break t)))
       (format t "~&getting calls for clm...")
@@ -98,20 +98,20 @@
 ;; *** layers-to-clm
 ;;; gets a layers-object and renders out a soundfile (constant faders)
 (defun layers-to-clm (layers &optional list-of-layer-ids)
-  (let* ((calls (sc::get-list-of-clm-calls layers))
+  (let* ((calls (ly::get-list-of-clm-calls layers))
 	 (ids (if list-of-layer-ids list-of-layer-ids
-		  (sc::get-ids layers))))
+		  (ly::get-ids layers))))
     (with-sound (:header-type mus-riff
 	         :sampling-rate 48000
 	         :channels 2
 	         :play nil
 		 :scaled-to 0.95
 	         :output (concatenate 'string
-				      (sc::get-sc-config 'default-dir)
+				      ly::*default-sample-dir*
 				      "layers.wav"))
       (calls-to-samp1 calls ids))))
 
-(in-package :sc)
+(in-package :ly)
 
 (defun layers-to-clm (layers &optional list-of-layer-ids)
   (clm::layers-to-clm layers list-of-layer-ids))

@@ -20,7 +20,7 @@
 		       &key id
 			    (duration *total-length*)
 		            (type 'lindenmayer)
-		            (smallest *max-smallest-sample-length*))
+			 (smallest *max-smallest-sample-length*))
   (make-instance 'structure
 		 :id id
 		 :data (funcall type duration seed rules ratios smallest)
@@ -74,10 +74,7 @@
 	(nth (current ll) data)))))
 
 ;; *** visualize-structure
-;;; use the sketch library to visualize the structure. bit crooked
-(when *load-risky-files*
-  (load-from-same-dir "show-structure.lsp")
-  (defmethod visualize-structure ((st structure))
-    (show-structure (reverse (cdr (reverse (data st)))))))
+;;; use the imago library to visualize the structure.
+(load (probe-file (format nil "~a~a" *src-dir* "show-structure.lsp")))
 
 ;;;; EOF structure.lsp

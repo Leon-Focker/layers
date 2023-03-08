@@ -9,15 +9,15 @@
 ;; * stored files
 ;; ** glitch
 
-;;(defparameter *glitch* (make-stored-file-list 'glitch '()))
+(defparameter *glitch* (make-stored-file-list 'glitch '()))
 
-#+nil(folder-to-stored-file-list *glitch*
+(folder-to-stored-file-list *glitch*
 			    "/E/code/layers/samples/one-shots/glitch/"
 			    :decay 100
 			    :auto-map t
 			    :auto-scale-mapping t
 			    :remap t)
-#|
+
 (defparameter *one-shots* (make-stored-file-list 'one-shots '()))
 
 (folder-to-stored-file-list *one-shots*
@@ -41,7 +41,7 @@
 			    :decay 100
 			    :auto-map t)
 
-(auto-scale-mapping *one-shots* :remap t)|#
+(auto-scale-mapping *one-shots* :remap t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -753,16 +753,24 @@
 		  :type 'compartmentalise
 		  :smallest 0.5))
 
-
+(defparameter *structure1*
+  (make-structure '(2)
+		  '((1 ((1 2)))
+		    (2 ((3 1 3)))
+		    (3 ((1 1 3 1))))
+		  '((1 1)
+		    (2 4)
+		    (3 .2))
+		  :type 'lindenmayer))
 ;; * layers
 
 ;;; define each layer:
 
-(defparameter *layer1* (make-layer '1 *drums1* *structure* 2 0 nil))
-(defparameter *layer2* (make-layer '2 *drums1* *structure* 2 90 nil))
-(defparameter *layer3* (make-layer '3 *one-shots* *structure* 0 45))
-(defparameter *layer4* (make-layer '4 *one-shots* *structure* 1 0))
-(defparameter *layer5* (make-layer '5 *one-shots* *structure* 2 90))
+(defparameter *layer1* (make-layer '1 *drums1* *structure1* 2 0 nil))
+(defparameter *layer2* (make-layer '2 *drums1* *structure1* 2 90 nil))
+(defparameter *layer3* (make-layer '3 *glitch* *structure1* 0 90))
+(defparameter *layer4* (make-layer '4 *glitch* *structure1* 1 0))
+(defparameter *layer5* (make-layer '5 *one-shots* *structure1* 2 45))
 
 ;;;define layers-object:
 

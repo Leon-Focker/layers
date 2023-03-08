@@ -5,7 +5,7 @@
 (in-package :layers)
 
 ;; *** custom setup (front end)
-(defparameter *total-length* 300)
+(defparameter *total-length* 10)
 (defparameter *seed* 5)
 ;; what is the maximum length for the smallest value in the structure?
 (defparameter *max-smallest-sample-length* 0.003)
@@ -23,7 +23,7 @@
 (defparameter *random-number* nil)
 (defparameter *next-trigger* 0) ;; time until next sample(s) will be triggered in ms
 (defparameter *default-sample-dir*
-  (format nil "~a~a" (sc::parent-dir (sc::parent-dir *src-dir*)) "/samples"))
+  (format nil "~a~a" (parent-dir (parent-dir *src-dir*)) "/samples"))
 (defparameter *x-y-z-position* (vector 0 0 0))
 (defparameter *score-file* *load-pathname*) ;; set which file to reload to reset
 (defparameter *layers-buffer* '()) ;; variable used to temporarily store data
