@@ -304,7 +304,7 @@
 
 ;; *** make-list-into-function
 ;;; curried list-interp
-(defun make-list-into-function (list duration &optional last-at-what-x)
+(defun make-list-into-function (list duration) ; &optional last-at-what-x)
   (lambda (x) (list-interp x list duration)))
 
 ;; *** flatness
