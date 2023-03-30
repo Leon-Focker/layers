@@ -17,12 +17,18 @@
 			  :initform nil)
    (preferred-length :accessor preferred-length :initarg :preferred-length
 		     :initform nil)
+   ;; duration in seconds
    (duration :accessor duration :initarg :duration :initform 0)
+   ;; duration in samples
+   (total-samples :accessor total-samples :initarg :total-samples :initform 0)
+   ;; samplerate of the soundfile
+   (samplerate :accessor samplerate :initarg :samplerate :initform 48000)
    (start :accessor start :initarg :start :initform 0)
    ;; multiplier when playing soundfile back
    (amplitude :accessor amplitude :initarg :amplitude :initform 1)
    ;; loudest sample in the soundfile
    (peak :accessor peak :initarg :peak :initform nil)
+   (peak-index :accessor peak-index :initarg :peak-index :initform 0)
    (loop-flag :accessor loop-flag :initarg :loop-flag :initform nil)
    (decay :accessor decay :initarg :decay :initform 0)
    (panorama :accessor panorama :initarg :panorama :initform 45)
@@ -71,6 +77,8 @@
 							markov
 							`((,id 1))))
 		 :duration (soundfile-duration path)
+		 :total-samples (soundfile-framples path)
+		 :samplerate (soundfile-samplerate path)
 		 :start start
 		 :amplitude amplitude
 		 :panorama panorama
@@ -153,14 +161,16 @@
 (defmethod analyse-soundfile ((sf stored-file) &key fft-size)
   ;;(clm::play (path sf))
   (let* ((array (clm::table-from-file (path sf)))
-	 (envelope (clm::envelope-follower array)))
+	 (envelope (clm::envelope-follower array))
+	 (max (max-of-array-with-index array t)))
     (multiple-value-bind (c s f d)
 	(spectral-centroid array)
       (setf (centroid sf) c
 	    (spread sf) s
 	    (flatness sf) f
 	    (dominant-frequency sf) d))
-    (setf (peak sf) (max-of-array array)) 
+    (setf (peak sf) (first max))
+    (setf (peak-index sf) (second max))
     (setf (smoothness sf) (list-flatness envelope))
     (setf (transient sf) (biggest-jump (reduce-by envelope 50))))
   sf)
@@ -196,9 +206,12 @@
 		  :length-dependant-list ',(length-dependant-list sf)
 		  :preferred-length ',(preferred-length sf)
 		  :duration ',(duration sf)
+		  :total-samples ',(total-samples sf)
+		  :samplerate ',(samplerate sf)
 		  :start ',(start sf)
 		  :amplitude ',(amplitude sf)
 		  :peak ',(peak sf)
+		  :peak-index ',(peak-index sf)
 		  :loop-flag ',(loop-flag sf)
 		  :decay ',(decay sf)
 		  :panorama ',(panorama sf)
