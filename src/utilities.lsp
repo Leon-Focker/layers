@@ -39,7 +39,8 @@
 ;; *** os-path
 ;;; aims to automatically convert a linux or windows type path into the correct one
 ;;; for the current platform
-(unless (fboundp 'os-path)
+;;; already defined in all.lsp
+#+nil(unless (fboundp 'os-path)
   (defun os-path (path)
     (let* ((new-path (substitute #\/ #\: path))
 	   (device (if (char= #\/ (elt path 0))
@@ -59,27 +60,50 @@
       #+(or win32 win64) (format nil "~a:~a" device rest)
       #-(or win32 win64) (format nil "/~a~a" device rest))))
 
-;; *** unix-path
-;;; converts device-names ("/E/", "E:/") to unix format
-(defun unix-path (path)
+;; *** os-format-path
+;;; Converts device-names ("/E/", "E:/") according to type
+;;; Windows:  "E:"
+;;; Unix:     "/E/"
+;;; 
+;;; ARGUMENTS
+;;; - a string representing a path
+;;; 
+;;; RETURN VALUE
+;;; - a string representing a path
+;;;
+;;; EXAMPLE
+#|
+(os-format-path "/E/samples/kicks/kick.wav")
+=> "/E/samples/kicks/kick.wav"
+(os-format-path "E:/samples/kicks/kick.wav")
+=> "/E/samples/kicks/kick.wav"
+(os-format-path "/E/samples/kicks/kick.wav" 'windows)
+=> "E:/samples/kicks/kick.wav"
+(os-format-path "E:/samples/kicks/kick.wav" 'windows)
+=> "E:/samples/kicks/kick.wav"
+|#
+(defun os-format-path (path &optional (type 'unix))
   (let* ((new-path (substitute #\/ #\: path))
-	 (device (or (pathname-device path)
-		     (second (pathname-directory path))))
-	 (rest (subseq new-path (position #\/ new-path :start 1))))
-    (format nil "~a~a"
-	    (format nil "/~a" device)
-	    rest)))
-
-;; *** windows-path
-;;; converts device-names ("/E/", "E:/") to unix format
-(defun windows-path (path)
-  (let* ((new-path (substitute #\/ #\: path))
-	 (device (or (pathname-device path)
-		     (second (pathname-directory path))))
-	 (rest (subseq new-path (position #\/ new-path :start 1))))
-    (format nil "~a~a"
-	    (format nil "~a:" device)
-	    rest)))
+	 (device (if (char= #\/ (elt path 0))
+		     (second (pathname-directory path))
+		     (format nil "~{~a~}"
+			     (loop with break until break for i from 0 collect
+				  (let ((this (elt path i))
+					(next (elt path (1+ i))))
+				    (when (or (char= #\: next)
+					      (char= #\/ next))
+				      (setf break t))
+				    this)))))
+	 (helper (subseq new-path (1+ (position #\/ new-path :start 1))))
+	 (rest (if (char= #\/ (elt helper 0))
+		   helper
+		   (format nil "/~a" helper))))
+    ;; intering the symbol is nicer when calling this from other packages
+    (case (intern (string type) :sc)
+      ((unix linux) (format nil "/~a~a" device rest))
+      ((or windows test1) (format nil "~a:~a" device rest))
+      ;; if type is unknown, no error but unix type path:
+      (t (format nil "/~a~a" device rest)))))
 
 ;;; *** load-from-file
 (defmethod load-from-file (file)
@@ -215,6 +239,16 @@
 ;;; get the duration of a soundfile in seconds
 (defun soundfile-duration (path)
   (clm::sound-duration path))
+
+;; *** soundfile-framples
+;;; get the number of framples (number of samples / channels)
+(defun soundfile-framples (path)
+  (clm::sound-framples path))
+
+;; *** soundfile-samplerate
+;;; samplerate of the soundfile
+(defun soundfile-samplerate (path)
+  (clm::sound-srate path))
 
 ;; *** biggest-jump
 ;;; discrete derivation maximum i guess?
@@ -373,9 +407,15 @@
 
 ;; *** max-of-array
 ;;; max of an array
-(defun max-of-array (array)
-  (loop for i below (length array) maximize
-       (abs (aref array i))))
+(defun max-of-array (array &optional abs?)
+  (loop for i across array maximize (if abs? (abs i) i)))
+
+;; *** max-of-array-with-index
+;;; max of an array and the index at which it first occurs
+(defun max-of-array-with-index (array &optional abs?)
+  (loop for i from 0 and el across array with max = 0 with max-i
+     when (> (if abs? (abs el) el) max) do (setf max el max-i i)
+     finally (return `(,max ,max-i))))
 
 ;; *** get-spectral-centroid
 ;;; calulate the spectral centroid out of a list of frequency-magnitude pairs
