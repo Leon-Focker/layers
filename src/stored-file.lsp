@@ -112,20 +112,20 @@
 ;;; dominant frequency, centroid, flattnes and spread of soundfile.
 ;;; (function needs new name?)
 ;;; file can either be an array or the path to a file
-(defun spectral-centroid (file &key fftsize (srate 48000))
+(defun spectral-centroid (file &key fft-size (srate 48000))
   (let* ((ar (not (stringp file)))
 	 (srate (if ar srate (clm::sound-srate file)))
 	 (sample-len (if ar (length file) (soundfile-duration file)))
-	 ;; if not supplied, fftsize is set to the hightes possible power of two
+	 ;; if not supplied, fft-size is set to the hightes possible power of two
 	 ;; (up until ca. a second)
-	 (fftsize (or fftsize
+	 (fft-size (or fft-size
 		      (loop with num = 1 for i from 1 until (or (> num srate)
 							     (> num sample-len))
 			 finally (return (expt 2 (- i 2)))
 			 do (setf num (* num 2)))))
-	 ;; by repeating fftsize/4 times we take into account freqs up to 12kHz
-	 (repeats (/ fftsize 4))
-	 (base-freq (/ srate fftsize))
+	 ;; by repeating fft-size/4 times we take into account freqs up to 12kHz
+	 (repeats (/ fft-size 4))
+	 (base-freq (/ srate fft-size))
 	 (arithmetic-mean 0)
 	 (geometric-mean 0)
 	 (a 0)
@@ -135,7 +135,7 @@
 	 (e '(0 0))
 	 (m '()))
     (setf m (clm::fft-from-file file
-				:fftsize fftsize
+				:fft-size fft-size
 				:window clm::hanning-window))
     (loop for i from 0 and j in m repeat repeats do
 	 (when (> j (car e)) (setf e (list j (* i base-freq 1.0))))
@@ -158,13 +158,13 @@
 
 ;; *** analyse-soundfile
 ;;; analyse some basic parameters and write them into the sf-object
-(defmethod analyse-soundfile ((sf stored-file) &key fft-size)
+(defmethod analyse-soundfile ((sf stored-file) &key fft-size (srate 48000))
   ;;(clm::play (path sf))
   (let* ((array (clm::table-from-file (path sf)))
 	 (envelope (clm::envelope-follower array))
 	 (max (max-of-array-with-index array t)))
     (multiple-value-bind (c s f d)
-	(spectral-centroid array)
+	(spectral-centroid array :fft-size fft-size :srate srate)
       (setf (centroid sf) c
 	    (spread sf) s
 	    (flatness sf) f

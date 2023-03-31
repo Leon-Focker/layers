@@ -29,23 +29,24 @@
 ;; *** fft-from-file
 ;;; file can be a pathname or an array
 (defun fft-from-file (file &key
-			     (fftsize 2048)
+			     (fft-size 2048)
 			     (start-sample 0)
 			     (window 0)
 			     visualize)
   (let* ((fdr (let* ((frame (make-double-array
-			     fftsize
+			     fft-size
 			     :initial-contents
 			     (cond ((stringp file)				 
-				    (table-from-file file start-sample fftsize))
+				    (table-from-file file start-sample
+						     fft-size))
 				   ((arrayp file)
 				    (subseq file
 					    start-sample
-					    (+ start-sample fftsize)))
+					    (+ start-sample fft-size)))
 				   (t (error "fft-from-file: file is of a weird~
                                                   type: ~a" (type-of file)))))))
-		(multiply-arrays frame (make-fft-window window fftsize))))
-	 (fdi (make-double-array fftsize))
+		(multiply-arrays frame (make-fft-window window fft-size))))
+	 (fdi (make-double-array fft-size))
 	 (magnitudes '())
 	 (phases '()))
     ;; visualize amplitude of file:
@@ -53,8 +54,8 @@
 			 (terpri)
 			 *separate*))
     ;; do fft
-    (fft fdr fdi fftsize 1)
-    (loop for i below fftsize do
+    (fft fdr fdi fft-size 1)
+    (loop for i below fft-size do
 	 (let ((real (aref fdr i))
 	       (im (aref fdi i)))
 	   (push (sqrt (+ (* real real) (* im im))) magnitudes)
