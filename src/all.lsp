@@ -69,18 +69,20 @@
       #+(or win32 win64) (format nil "~a:~a" device rest)
       #-(or win32 win64) (format nil "/~a~a" device rest))))
 
-(unless (fboundp 'directory-name)
-  (defun directory-name (path)
-    (when (> (length path) 0)
-      (loop until (char= #\/ (elt path (1- (length path)))) do
-	    (setf path (subseq path 0 (1- (length path)))))
-      path)))
-
 (defun parent-dir (path)
-  (subseq path 0 (position #\/ path :from-end t)))
+  (directory-namestring
+   (make-pathname :directory (butlast (pathname-directory path)))))
 
-(defparameter *src-dir*
-  (os-path (directory-name (namestring *load-pathname*))))
+;; is os-path neccessary here?
+(defparameter *layers-src-dir*
+  (directory-namestring (truename *load-pathname*)))
+
+#+nil(defparameter *layers-src-dir*
+  (os-path (directory-namestring (truename *load-pathname*))))
+
+(defparameter *src-dir* *layers-src-dir*)
+
+(defparameter *layers-home-dir* (parent-dir *layers-src-dir*))
 
 (defun quiet-warning-handler (c)
   (let ((r (find-restart 'muffle-warning c)))
@@ -110,8 +112,7 @@
 		  "layer.lsp"
 		  "layers.lsp"
 		  ))
-    (load (probe-file (format nil "~a~a" *src-dir* file))))
-  (format t "~&finished loading!"))
+    (load (probe-file (format nil "~a~a" *src-dir* file)))))
 (load-all)
 
 (when (ignore-errors clm::*clm*)
@@ -121,5 +122,7 @@
 
 (let ((pack (find-package :layers)))
   (do-all-symbols (sym pack) (when (eql (symbol-package sym) pack) (export sym))))
+
+(format t "~&finished loading!")
 
 ;;;; EOF all.lsp

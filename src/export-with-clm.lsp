@@ -47,7 +47,7 @@
 
 (let ((file "/home/leon/lisp/edwards/samp1.ins"))
   (if (probe-file file)
-      (load file)
+      (load (compile-file file))
       (error "~&~a not found, please replace with your path to Michael Edwards~
               samp1 instrument" file)))
 

@@ -23,7 +23,7 @@
 (defparameter *random-number* nil)
 (defparameter *next-trigger* 0) ;; time until next sample(s) will be triggered in ms
 (defparameter *default-sample-dir*
-  (format nil "~a~a" (parent-dir (parent-dir *src-dir*)) "/samples"))
+  (format nil "~a~a" (parent-dir (parent-dir *src-dir*)) "samples"))
 (defparameter *x-y-z-position* (vector 0 0 0))
 (defparameter *score-file* *load-pathname*) ;; set which file to reload to reset
 (defparameter *layers-buffer* '()) ;; variable used to temporarily store data

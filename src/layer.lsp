@@ -280,14 +280,12 @@
 	   ;; layer id (which voice in PD to send to)
 	   (get-id ly)
 	   ;; soundfile
-	   (if (and *pd-on-windows*
-		    (not output-for-unix))
-	       (windows-path
-		(path (if get-next (current-stored-file ly)
-			  (last-stored-file ly))))
-	       (unix-path
-		(path (if get-next (current-stored-file ly)
-			  (last-stored-file ly)))))
+	   (os-format-path (path (if get-next (current-stored-file ly)
+				     (last-stored-file ly)))
+			   (if (and *pd-on-windows*
+				    (not output-for-unix))
+			       'windows
+			       'unix))
 	   ;; soundfile-length in seconds
 	   (play-length ly)
 	   ;; start in seconds
@@ -333,14 +331,12 @@
 	   ;; layer id (which voice in PD to send to)
 	   (get-id ly)
 	   ;; soundfile
-	   (if (and *pd-on-windows*
-		    (not output-for-unix))
-	       (windows-path
-		(path (if get-next (current-stored-file ly)
-			  (last-stored-file ly))))
-	       (unix-path
-		(path (if get-next (current-stored-file ly)
-			  (last-stored-file ly)))))
+	   (os-format-path (path (if get-next (current-stored-file ly)
+				     (last-stored-file ly)))
+			   (if (and *pd-on-windows*
+				    (not output-for-unix))
+			       'windows
+			       'unix))
 	   ;; soundfile-length in seconds
 	   0
 	   ;; start in seconds
