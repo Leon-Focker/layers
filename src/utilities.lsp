@@ -197,11 +197,10 @@
 		   (t (helper chooser
 			      (cdr ls1)
 			      (+ index 1)
-			      (+ sum (car ls1)))))))
-    (helper (sc::rescale chooser 0 1 0 (loop for i in ls
-					  do (unless i (error 'no-value))
-					  sum i))
-	    (cdr ls) 0 (car ls))))
+			      (+ sum (rationalize (car ls1))))))))
+    (helper (sc::rescale (rationalize chooser) 0 1 0 (loop for i in ls sum
+							  (rationalize i)))
+	    (cdr ls) 0 (rationalize (car ls)))))
 
 ;; *** index-of-element
 (defun index-of-element (element ls)
@@ -395,6 +394,24 @@
 				     (id structure) "-n-" n ".mid")
 			     (format nil "~a~a~a" "structure-"
 				     (id structure) ".mid")))))
+
+;; *** midi-file-to-list
+;;; slippery chickens midi-file-to-events seems to make things more complicated
+;;; than need be, so this function just reads the file without making events
+;;; !!! notice, that currently there is no tempo argument - so be careful,
+;;; that the imported file is already in the right tempo
+(defun midi-file-to-list (file &optional track)
+  (let* ((cm-midi (cm::parse-midi-file file track)))
+    (remove nil
+	    (loop for m in cm-midi
+		  collect (typecase m
+			    (cm::midi (list (cm::object-time m)
+					    (cm::midi-keynum m)
+					    (cm::midi-duration m)
+					    (cm::midi-amplitude m)
+					    (cm::midi-channel m)
+					    (+ (cm::object-time m)
+					       (cm::midi-duration m)))))))))
 
 ;; *** distance-between-points
 ;;; distance between two points p1 and p2,
