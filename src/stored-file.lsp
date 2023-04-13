@@ -34,17 +34,18 @@
    (panorama :accessor panorama :initarg :panorama :initform 45)
    ;; analysed, not user set data:
    ;; spectral centroid
-   (centroid :accessor centroid :initarg :centroid)
+   (centroid :accessor centroid :initarg :centroid :initform nil)
    ;; spectral spread
-   (spread :accessor spread :initarg :spread)
+   (spread :accessor spread :initarg :spread :initform nil)
    ;; spectral flatness
-   (flatness :accessor flatness :initarg :flatness)
+   (flatness :accessor flatness :initarg :flatness :initform nil)
    ;; dominant frequency
-   (dominant-frequency :accessor dominant-frequency :initarg :dominant-frequency)
+   (dominant-frequency :accessor dominant-frequency :initarg :dominant-frequency
+		       :initform nil)
    ;; envelope smoothness
-   (smoothness :accessor smoothness :initarg :smoothness)
+   (smoothness :accessor smoothness :initarg :smoothness :initform nil)
    ;; biggest jump up in the envelope
-   (transient :accessor transient :initarg :transient)
+   (transient :accessor transient :initarg :transient :initform nil)
    ;; position in a 3d coordinate space - can also be used to get next file
    (x :accessor x :initarg :x :initform 0.5 :reader x)
    (y :accessor y :initarg :y :initform 0.5 :reader y)
@@ -224,5 +225,13 @@
 		  :x ',(x sf)
 		  :y ',(y sf)
 		  :z ',(z sf)))
+
+;; *** store-in-text-file
+;;; store a sfl in a text file, so the analysis can be skipped by reading in
+;;; the soundfiles.
+(defmethod store-in-text-file ((sf stored-file) &optional file)
+  (let* ((file (or file (format nil "~a~a-load-file.txt" *src-dir* (id sf)))))
+    (sc::write-to-file file (make-load-form sf))
+    (format t "~&wrote ~a into ~a" (id sf) file)))
 
 ;;;; EOF stored-file.lsp
