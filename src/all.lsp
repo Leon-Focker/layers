@@ -1,3 +1,15 @@
+;; * Layers
+;;;; Layers is designed to load, analyse and store soundfiles and play them back
+;;;; in a live setup in pure data. This provides the infrastructure and the
+;;;; interface to pure data. Soundfiles can be chosen trough markov chains or
+;;;; their attributes, depending on some other limitations. Rhythms are for now
+;;;; provided by "structure" objects.
+
+;;;; This software is in a weird state, in that it depends immensely on
+;;;; Michael Edwards' slippery chicken, especially its utilities, but builds its
+;;;; entire separate object infastructure. This would not have been neccessary
+;;;; but it is too late now I think.
+
 ;;;; To do:
 ;;;; check reset (?) - layer-objects are updated - layers-ojects are not
 ;;;; variable rest probability multiplier?
@@ -30,7 +42,7 @@
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value
 
-;; * Layers
+;;;; stereo-output for each layer?
 
 (in-package :cl-user)
 
@@ -76,9 +88,6 @@
 ;; is os-path neccessary here?
 (defparameter *layers-src-dir*
   (directory-namestring (truename *load-pathname*)))
-
-#+nil(defparameter *layers-src-dir*
-  (os-path (directory-namestring (truename *load-pathname*))))
 
 (defparameter *src-dir* *layers-src-dir*)
 
