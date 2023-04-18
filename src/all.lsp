@@ -81,13 +81,19 @@
       #+(or win32 win64) (format nil "~a:~a" device rest)
       #-(or win32 win64) (format nil "/~a~a" device rest))))
 
+(unless (fboundp 'directory-name)
+  (defun directory-name (path)
+    (when (> (length path) 0)
+      (loop until (char= #\/ (elt path (1- (length path)))) do
+	    (setf path (subseq path 0 (1- (length path)))))
+      path)))
+
 (defun parent-dir (path)
-  (directory-namestring
-   (make-pathname :directory (butlast (pathname-directory path)))))
+  (subseq path 0 (position #\/ path :from-end t)))
 
 ;; is os-path neccessary here?
 (defparameter *layers-src-dir*
-  (directory-namestring (truename *load-pathname*)))
+  (directory-name (truename *load-pathname*)))
 
 (defparameter *src-dir* *layers-src-dir*)
 
