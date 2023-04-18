@@ -93,7 +93,7 @@
 
 ;; is os-path neccessary here?
 (defparameter *layers-src-dir*
-  (directory-name (truename *load-pathname*)))
+  (directory-name (namestring *load-pathname*)))
 
 (defparameter *src-dir* *layers-src-dir*)
 
