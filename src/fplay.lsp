@@ -129,7 +129,7 @@
        ;; add sufficient 'file variables
        (merge-var-lists
 	(list (loop for i from 0 below (max 2 (length snd)) collect
-		   (if (= 0 i) 'file `(ly::path ,(name-var 'sound i)))))
+		   (if (= 0 i) 'file `(path ,(name-var 'sound i)))))
 	all-vars)
        ;; add all other variables that are not set through arg-list
        (merge-var-lists
@@ -187,9 +187,9 @@
 		    (format t "~&time: ~a"
 			    ,(name-var-highest 'time i all-vars))
 		    (when (equal (type-of ,(name-var-highest 'sound i all-vars))
-				 'layers:stored-file)
+				 'stored-file)
 			   (format t "~&sound: ~a"
-				   (ly::id ,(name-var-highest 'sound i
+				   (id ,(name-var-highest 'sound i
 							      all-vars))))
 		    (format t "~&duration: ~a"
 			    ,(name-var-highest 'duration i all-vars))
@@ -234,9 +234,9 @@
 ;;;  used within the definition of user-defined variables unless they are
 ;;;  previously defined by the user:
 ;;;  file - this is given to samp1 as its file argument and should be a path
-;;;   pointing to a soundfile. Its initial definition is (ly::path sound)
+;;;   pointing to a soundfile. Its initial definition is (path sound)
 ;;;  sound - this is a variable designed to hold a stored-file (see :layers).
-;;;   Initially defined as (first (ly::data sfl)).
+;;;   Initially defined as (first (data sfl)).
 ;;;  sfl - a stored-file-list (see :layers). This can be thought of as the
 ;;;   'sample-library' that is used. But can also be totally ignored.
 ;;;  rhythm - the time between this call to samp1 and the next one. 'Time

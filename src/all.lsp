@@ -92,7 +92,13 @@
 (when (ignore-errors clm::*clm*)
   (handler-bind ((warning
 		  #'quiet-warning-handler))
-    (load (compile-file (format nil "~a~a" *src-dir* "analysis.lsp")))))
+    (load (compile-file (format nil "~a~a" *src-dir* "analysis.lsp")))
+    ;; Michael Edwards samp1 instrument, but you can select the input channel:
+    ;; It would also be possible to use samp5 (slippery chicken).
+    (load (compile-file (probe-file (format nil "~a~a" *src-dir*
+					    "samp0.ins"))))))
+
+(import '(clm::samp0))
 
 ;; *** load-all
 ;;; load most of the files
