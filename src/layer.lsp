@@ -286,28 +286,28 @@
 				    (not output-for-unix))
 			       'windows
 			       'unix))
-	   ;; soundfile-length in seconds
-	   (play-length ly)
+	   ;; soundfile-length in seconds, pd needs floats
+	   (float (play-length ly))
 	   ;; start in seconds
-	   (mod
-	    (+ (if (eq (start (current-stored-file ly)) 'random)
-		   (if (> (duration (current-stored-file ly)) (this-length ly))
-		       (random (- (duration (current-stored-file ly)) (this-length ly)))
-		       0)
-		   (or (start (current-stored-file ly)) 0))
-	       offset-start)
-	    (duration (current-stored-file ly)))
+	   (float (mod
+		   (+ (if (eq (start (current-stored-file ly)) 'random)
+			  (if (> (duration (current-stored-file ly)) (this-length ly))
+			      (random (- (duration (current-stored-file ly)) (this-length ly)))
+			      0)
+			  (or (start (current-stored-file ly)) 0))
+		      offset-start)
+		   (duration (current-stored-file ly))))
 	   ;; attack in milliseconds
 	   10
 	   ;; decay in miliseconds
-	   (* 1000 ;; from seconds to miliseconds
-	      (let ((max-decay (see-next (list-of-durations ly)))
-		    (decay (decay (current-stored-file ly))))
-		(if (>= decay max-decay)
-		    max-decay
-		    decay)))
+	   (float (* 1000 ;; from seconds to miliseconds
+		     (let ((max-decay (see-next (list-of-durations ly)))
+			   (decay (decay (current-stored-file ly))))
+		       (if (>= decay max-decay)
+			   max-decay
+			   decay))))
 	   ;; amplitude
-	   (amplitude (current-stored-file ly))
+	   (float (amplitude (current-stored-file ly)))
 	   ;; loop-flag
 	   (if (loop-flag (current-stored-file ly))
 	       1 0)
@@ -316,11 +316,11 @@
 	       (get-id-current-file ly)
 	       (get-id-last-file ly))
 	   ;; panning
-	   (if (use-pan-of-layer ly)
-	       (panorama ly)
-	       (if (eq (panorama (current-stored-file ly)) 'random)
-		   (* 90 (get-next *random-number*))
-		   (panorama (current-stored-file ly))))
+	   (float (if (use-pan-of-layer ly)
+		      (panorama ly)
+		      (if (eq (panorama (current-stored-file ly)) 'random)
+			  (* 90 (get-next *random-number*))
+			  (panorama (current-stored-file ly)))))
 	   ;; change sampler or use same as last?
 	   (if change-sampler 1 0))
 	(when printing (print-layer ly))

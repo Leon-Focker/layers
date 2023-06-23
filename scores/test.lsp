@@ -9,14 +9,20 @@
 ;; * stored files
 ;; ** glitch
 
-(defparameter *glitch* (make-stored-file-list 'glitch '()))
 
-(folder-to-stored-file-list *glitch*
-			    "/E/code/layers/samples/one-shots/glitch/"
-			    :decay 100
-			    :auto-map t
-			    :auto-scale-mapping t
-			    :remap t)
+(defparameter *glitch* (make-stored-file-list 'glitch '()))
+(defparameter *glitch-txt* "/E/code/layers/scores/glitch.txt")
+
+(if (probe-file *glitch-txt*)
+    (progn
+      (folder-to-stored-file-list *glitch*
+				  "/E/code/layers/samples/one-shots/glitch/"
+				  :decay 100
+				  :auto-map t
+				  :auto-scale-mapping t
+				  :remap t)
+      (store-in-text-file *glitch* *glitch-txt*))
+    (setf *glitch* (load-from-file *glitch-txt*)))
 
 (defparameter *one-shots* (make-stored-file-list 'one-shots '()))
 
