@@ -63,7 +63,9 @@
   (ql:quickload :cl-pcg))
 
 (unless (fboundp 'os-path)
-  (defun os-path (path) (os-format-path path)))
+  (defun os-path (path)
+    #+(or win32 win64) (os-format-path path 'windows)
+    #-(or win32 win64) (os-format-path path)))
 
 (unless (fboundp 'directory-name)
   (defun directory-name (path)

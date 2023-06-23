@@ -157,15 +157,15 @@
     ;; finally tell PD what to do:
     (list 'set-n
 		 ;; time until next trigger
-		 (- *next-trigger* current-timer)
+		 (float (- *next-trigger* current-timer))
 		 ;; reset-timer in pd?
 		 reset-timer-flag
 		 ;; layer ID
 		 layer-id
 		 ;; remaining time for currently played file
-		 (- new-next-trigger current-time)
+		 (float (- new-next-trigger current-time))
 		 ;; new decay
-		 (see-next (list-of-durations ly)))
+		 (float (see-next (list-of-durations ly))))
       ))
 
 
