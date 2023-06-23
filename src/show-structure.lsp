@@ -28,7 +28,7 @@
 	 (setf sublist (nth n ls))
 	 (setf sublength (length sublist))
 	 (loop for x from 0 to (1- w) do
-	      (setf index (decider (/ x w) sublist))
+	      (setf index (sc::decider (/ x w) sublist))
 	      (setf element (nth index sublist))
 	      (setf color (make-color (floor (* (expt (- 1 (/ element 1)) 5) 255))
 				      (floor (* (/ n length) 100))

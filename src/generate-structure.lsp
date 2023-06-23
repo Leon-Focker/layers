@@ -6,11 +6,13 @@
 ;; *** scale-structure
 ;;; scale all values in the recursive structure to wanted length.
 ;;; returns flattened list
-(defun scale-structure (ls target-sum)
+#+nil(defun scale-structure (ls target-sum)
   (let* ((ls (sc::flatten ls))
 	 (sum-ls (loop for i in ls sum (rationalize i))))
     (loop for i in ls collect
 	 (sc::rescale i 0 sum-ls 0 target-sum #'error #'rationalize))))
+(defun scale-structure (struct target-sum)
+  (scale-list-to-sum (flatten struct) target-sum))
 
 ;; *** lindenmayer
 ;;; generates a lindenmayer-like recursive list

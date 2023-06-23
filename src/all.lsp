@@ -111,6 +111,8 @@
 		  "layer.lsp"
 		  "layers.lsp"
 		  "morph.lsp"
+		  "transitions.lsp"
+		  "fplay.lsp"
 		  ))
     (load (probe-file (format nil "~a~a" *src-dir* file)))))
 (load-all)
