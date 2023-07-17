@@ -2,14 +2,16 @@
 
 (in-package :ly)
 
+#|
 ;; *** dynamic-collect
 ;;; give any amount of arguments to a collect in a loop in a macro :)
-;;; see fplay-get-loop-vars for actual use
+;;; naybe useless?
 (defmacro dynamic-collect (&rest rest)
   `(loop for i in (quote ,rest) collect 'collect collect i))
 
 (defmacro dynamic-collect-ls (rest)
   `(loop for i in ,rest collect 'collect collect i))
+|#
 
 ;; *** name-var
 ;;; name a variable after the following scheme:
@@ -27,7 +29,7 @@
 	  (len (1- (length ass)))
 	  (n (min ,i len)))
      (name-var ,name n)))
-
+  
 ;; *** get-loop-vars
 ;;; return a list with statements of type 'for var-name = var-def'
 ;;; arg-list - list of lists, these contain a name for a variable
@@ -46,33 +48,25 @@
   `(progn
      (unless (listp ,arg-list)
        (error "arg-list in get-loop-vars must be a list: ~a" ,arg-list))
-     (loop for var in ,arg-list
-	for len = (length var)
-	for var-name = (first var)
-	for substring = (when (> (length (string var-name)) 3)
-			  (subseq (string var-name) 0 4))
-	for flag = (or (equal "TIME" substring))
-	do (unless (symbolp var-name)
-	     (error "invalid name for a variable: ~a" var-name))
-	  (when (> len 10)
-	    (warn "are you sure about ~a different instances of ~a?"
-		  len var-name))
-	append (when (> len 1)
-		 (loop for i from 1 for var-def in (cdr var)
-		    for def = (if (stringp var-def)
-				  (string-to-list var-def)
-				  (list var-def))
-		      ,@(dynamic-collect
-			 (if flag 'with 'for)
-			 (name-var var-name i)
-			 '=
-			 (if (stringp var-def)
-			     (first (string-to-list var-def))
-			     var-def))))
-	append (first (when (> len 1)
-		 (loop for i from 1 for var-def in (cdr var)
-		    when (stringp var-def)
-		    collect (cdr (string-to-list var-def))))))))
+     (loop for el in
+	  (loop for var in ,arg-list
+	     for len = (length var)
+	     for var-name = (first var)
+	     for substring = (when (> (length (string var-name)) 3)
+			       (subseq (string var-name) 0 4))
+	     for flag = (or (equal "TIME" substring))
+	     do (unless (symbolp var-name)
+		  (error "invalid name for a variable: ~a" var-name))
+	       (when (> len 10)
+		 (warn "are you sure about ~a different instances of ~a?"
+		       len var-name))
+	     append (when (> len 1)
+		      (loop for i from 1 for var-def in (cdr var)
+			 collect (if flag 'with 'for)
+			 collect (name-var var-name i)
+			 collect '=
+			 collect var-def)))
+	append (if (stringp el) (string-to-list el) (list el)))))
 
 ;; *** merge-var-lists
 ;;; push elements from list 'from into list 'into, but only if no sublist with
