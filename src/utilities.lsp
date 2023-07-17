@@ -280,6 +280,23 @@
 	   (setf sum 0)))
     (reverse new)))
 
+;; *** get-beat-prox
+;;; check how close a number is to a "beat" aka an even subdivision of 1
+;;; number must be between 0 and 1
+;;; (get-beat-prox 1)   => 0
+;;; (get-beat-prox .5)  => 1
+;;; (get-beat-prox .75) => 2
+;;; (get-beat-prox .7)  => 3
+(defun get-beat-prox (i &optional (how-many-levels 4))
+  (unless (<= 0 i 1) (error "i must be between 0 and 1, not ~a" i))
+  (unless (and (integerp how-many-levels) (< 1 how-many-levels 100))
+    (error "silly value for how-many-levels: ~a" how-many-levels))
+  (round (log (denominator
+	       (rational
+		(/ (round (* i (expt 2 (1- how-many-levels))))
+		   (expt 2 (1- how-many-levels)))))
+	      2)))
+
 ;; *** list-interp
 ;;; looks at a list as a series of y values, spaced equally from 0 to max-x
 ;;; give any rational x to return interpolated result between two y values
