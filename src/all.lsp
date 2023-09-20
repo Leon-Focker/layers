@@ -42,6 +42,10 @@
 ;;;; more interesting xyz mapping
 ;;;; -> envelope follower, attack count, rms value
 
+;;;; use layers with pd as live version of fplay:
+;;;; - (start values) then functions to determine next file and new parameters
+;;;; - lists to determine -"-
+
 ;;;; stereo-output for each layer?
 
 (in-package :cl-user)
@@ -138,6 +142,9 @@
     value this minimum pitch scale env centroid visualize ;
     double tempo))|#
     (when (eql (symbol-package sym) pack) (export sym)))) ;)
+
+;; export some symbols that are not exported because they are already in sc etc.
+(loop for sym in '(data duration) do (export sym))
 
 (format t "~&finished loading!")
 
