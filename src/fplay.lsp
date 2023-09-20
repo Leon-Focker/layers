@@ -89,6 +89,9 @@
      (loop for i in ,arg-list unless (listp i) do
 	  (error "argument ~a in fplay is malformed." i))
      (let* ((max-len (1- (apply #'max (mapcar #'length ,arg-list))))
+	    ;; to render only some voices, enable these and replace max-len 
+	    ;(from (or (second (assoc 'from ,arg-list)) 1))
+	    ;(to (or (second (assoc 'to ,arg-list)) max-len))
 	    (rthm (assoc 'rhythm ,arg-list))
 	    (tim (assoc 'time ,arg-list))
 	    (con (assoc 'condition ,arg-list))
@@ -120,6 +123,16 @@
 	all-vars)
        ;; get user-defined variables in the mix
        (merge-var-lists ,arg-list all-vars)
+       ;; starting with some stubs for error messages, not sure yet if this is
+       ;; usefull, since more often than not i will first run into an error and
+       ;; then eval this.
+       #+nil(merge-var-lists
+	(list (loop for i from 0 below (max 2 (length snd)) collect
+		   (if (= 0 i) 'errors `(unless ,(name-var 'sound i)
+					  (error "~a is nil at i = ~a"
+						 ',(name-var 'sound i)
+						 i)))))
+	all-vars)
        ;; add sufficient 'file variables
        (merge-var-lists
 	(list (loop for i from 0 below (max 2 (length snd)) collect
