@@ -1,0 +1,32 @@
+#+title: Layers
+#+author: Leon Focker
+
+Layers is a generative music library for common lisp, using Slippery Chicken and CLM for a lot of their utilities and Pure Data as a real time sampler. It's purpose is not sound design or synthesis but rather that of a complex analysis and sampling system. Layers might be used in real time or to export either audio files or data structures for musical application.
+
+** Requirements
+
+- [[https://ccrma.stanford.edu/software/clm/][Common Lisp Music]]
+- [[https://michael-edwards.org/sc/][Slippery Chicken]]
+- ([[https://puredata.info/][Pure Data]])
+
+** Installation
+
+CLM and Slippery Chicken must already be installed. Then copy the source code and run ".../layers/src/all.lsp"
+
+** Example Usage
+
+*** real time usage
+
+For an example for real time use, check scores/example.lsp. The paths to the soundfiles in scores/stored-files.lsp must be adjusted.
+
+Layers connects with osc (using the #'start-osc function) to Pure Data, to trigger samples. Ideally, both Lisp and Pure Data should be able to access the samples. It could however also be set up in a way, that only Pure Data needs to access the samples for it to trigger them. Lisp and Pure Data could run on different machines. 
+
+*** offline usage
+
+For now, several methods for offline usage are available.
+#'export-with-clm renders a Layers object
+#'fplay creates score for use in #'with-sound. See the [[https://github.com/Leon-Focker/feedback][score]] for [[https://leonfocker.de/works/los_tin_the_echo.html][los tin the echo]] as an example.
+
+** Contact
+
+If anyone ever uses this and there is any questions contact me at contact@leonfocker.de
