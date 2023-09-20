@@ -3,7 +3,7 @@
 ;;; load layers and set this file to current score file:
 
 (unless (fboundp 'ly::layers-has-been-loaded)
-  (load "/E/code/layers/src/layers.lsp"))
+  (load "/E/code/layers/src/all.lsp"))
 (setf *score-file* *load-pathname*)
 
 ;; * stored files

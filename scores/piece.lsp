@@ -1,7 +1,8 @@
 ;;; load layers and set this file to current score file:
 
 (unless (find-package 'ly)
-  (load "/E/code/layers/src/all.lsp"))
+  #-(or win32 win64)(load "/E/code/layers/src/all.lsp")
+  #+(or win32 win64)(load "e:/code/layers/src/all.lsp"))
 
 (in-package :ly)
 
@@ -9,7 +10,7 @@
 
 ;;; load soundfiles:
 
-(load "/E/code/layers/scores/stored-files.lsp")
+(load-from-same-dir "stored-files.lsp")
 
 ;;; make structure:
 
