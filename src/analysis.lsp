@@ -15,7 +15,7 @@
 	 (let* ((st (or start 0))
 		(len (mus-length file))
 		(size (or length (1- len)))
-		(ar (make-double-array size :initial-element 0.0))
+		(ar (make-double-array size :initial-element 0.0d0))
 		(readin0 (make-readin f :start st)))
 	   (unless (< (+ st size) len)
 	     (error "~&start ~a and size ~ too big for file ~

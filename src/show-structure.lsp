@@ -30,7 +30,7 @@
 	 (loop for x from 0 to (1- w) do
 	      (setf index (sc::decider (/ x w) sublist))
 	      (setf element (nth index sublist))
-	      (setf color (make-color (floor (* (expt (- 1 (/ element 1)) 5) 255))
+	      (setf color (make-color (floor (* (expt (- 1 (/ element 1)) 15) 255))
 				      (floor (* (/ n length) 100))
 				      (floor (* (/ n length) 100))))
 	      (setf (aref array y x) color)
@@ -43,6 +43,7 @@
 (in-package :layers)
 
 (defmethod visualize-structure ((st structure) &optional (size-factor 1) name)
+  (format t "~&visualizing structure: ~a" (id st))
   (imago::show-structure (reverse (cdr (reverse (data st)))) size-factor name))
 
 #|

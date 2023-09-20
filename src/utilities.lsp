@@ -436,9 +436,15 @@
 			   (loop repeat (length (nth i rhythm-blocks)) collect
 				(midi-to-note (- 60 i))))))
 	 (start-times (if n
-			  (get-start-times (nth n rhythm-blocks))
+			  (get-start-times
+			   (loop for i in
+				(nth n rhythm-blocks)
+				collect (float i)))
 			  (loop for i below len append
-			       (get-start-times (nth i rhythm-blocks)))))
+			       (get-start-times
+				(loop for i in
+				     (nth i rhythm-blocks)
+				     collect (float i))))))
 	 (durations (if n
 			(nth n rhythm-blocks)
 			(loop for i below len append (nth i rhythm-blocks)))))
@@ -459,14 +465,14 @@
   (let* ((cm-midi (cm::parse-midi-file file track)))
     (remove nil
 	    (loop for m in cm-midi
-		  collect (typecase m
-			    (cm::midi (list (cm::object-time m)
-					    (cm::midi-keynum m)
-					    (cm::midi-duration m)
-					    (cm::midi-amplitude m)
-					    (cm::midi-channel m)
-					    (+ (cm::object-time m)
-					       (cm::midi-duration m)))))))))
+	       collect (typecase m
+			 (cm::midi (list (cm::object-time m)
+					 (cm::midi-keynum m)
+					 (cm::midi-duration m)
+					 (cm::midi-amplitude m)
+					 (cm::midi-channel m)
+					 (+ (cm::object-time m)
+					    (cm::midi-duration m)))))))))
 
 ;; *** distance-between-points
 ;;; distance between two points p1 and p2,

@@ -51,44 +51,6 @@
    (y :accessor y :initarg :y :initform 0.5 :reader y)
    (z :accessor z :initarg :z :initform 0.5 :reader z)))
 
-;; *** make-stored-file
-;;; create an instance of stored-file and config with markov-list etc.
-(defun make-stored-file (id path-from-default-dir
-			 &key
-			   markov
-			   (decay 100)
-			   (directory *default-sample-dir*)
-			   (start 0)
-			   (amplitude 1)
-			   (panorama 45)
-			   (loop-flag nil)
-			   (preferred-length nil)
-			   (x 0.5)
-			   (y 0.5)
-			   (z 0.5))
-  (let* ((path (format nil "~a~a" directory path-from-default-dir)))
-    (unless (probe-file path)
-      (warn "~&the file with path ~a does not exist" path))
-    (make-instance 'stored-file
-		 :id id
-		 :name (pathname-name path-from-default-dir)
-		 :path path
-		 :decay decay ; in seconds
-		 :markov-list (make-markov-list nil (if markov
-							markov
-							`((,id 1))))
-		 :duration (soundfile-duration path)
-		 :total-samples (soundfile-framples path)
-		 :samplerate (soundfile-samplerate path)
-		 :start start
-		 :amplitude amplitude
-		 :panorama panorama
-		 :loop-flag loop-flag
-		 :preferred-length preferred-length
-		 :x x
-		 :y y
-		 :z z)))
-
 ;; *** setf-markov
 ;;; sets the markov list of a stored-file
 (defmethod setf-markov ((sf stored-file) new-markov-list)
@@ -194,6 +156,46 @@
   (setf (y sf) (funcall f2 sf))
   (setf (z sf) (funcall f3 sf))
   sf)
+
+;; *** make-stored-file
+;;; create an instance of stored-file and config with markov-list etc.
+(defun make-stored-file (id path-from-default-dir
+			 &key
+			   markov
+			   (decay 100)
+			   (directory *default-sample-dir*)
+			   (start 0)
+			   (amplitude 1)
+			   (panorama 45)
+			   (loop-flag nil)
+			   (preferred-length nil)
+			   (x 0.5)
+			   (y 0.5)
+			   (z 0.5)
+			   analyse)
+  (let* ((path (format nil "~a~a" directory path-from-default-dir)))
+    (unless (probe-file path)
+      (warn "~&the file with path ~a does not exist" path))
+    (let ((sf (make-instance 'stored-file
+			     :id id
+			     :name (pathname-name path-from-default-dir)
+			     :path path
+			     :decay decay ; in seconds
+			     :markov-list (make-markov-list nil (if markov
+								    markov
+								    `((,id 1))))
+			     :duration (soundfile-duration path)
+			     :total-samples (soundfile-framples path)
+			     :samplerate (soundfile-samplerate path)
+			     :start start
+			     :amplitude amplitude
+			     :panorama panorama
+			     :loop-flag loop-flag
+			     :preferred-length preferred-length
+			     :x x
+			     :y y
+			     :z z)))
+      (if analyse (analyse-soundfile sf) sf))))
 
 ;; *** make-load-form
 (defmethod make-load-form ((sf stored-file) &optional environment)
