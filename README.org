@@ -29,4 +29,4 @@ For now, several methods for offline usage are available.
 
 ** Contact
 
-If anyone ever uses this and there is any questions contact me at contact@leonfocker.de
+If anyone ever uses this and there is any questions contact me at [[mailto:contact@leonfocker.de][contact@leonfocker.de]]
