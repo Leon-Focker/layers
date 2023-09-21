@@ -1,16 +1,6 @@
 ;; * Layers
-;;;; Layers is designed to load, analyse and store soundfiles and play them back
-;;;; in a live setup in pure data. This provides the infrastructure and the
-;;;; interface to pure data. Soundfiles can be chosen trough markov chains or
-;;;; their attributes, depending on some other limitations. Rhythms are for now
-;;;; provided by "structure" objects.
 
-;;;; This software is in a weird state, in that it depends immensely on
-;;;; Michael Edwards' slippery chicken, especially its utilities, but builds its
-;;;; entire separate object infastructure. This would not have been neccessary
-;;;; but it is too late now I think.
-
-;;;; To do:
+;; ** TODO:
 ;;;; check reset (?) - layer-objects are updated - layers-ojects are not
 ;;;; variable rest probability multiplier?
 ;;;; create template
@@ -48,46 +38,46 @@
 
 ;;;; stereo-output for each layer?
 
+;;;; usage without clm?
+
 (in-package :cl-user)
 
-(unless (find-package 'slippery-chicken)
-  (error "slippery chicken needs to be installed and loaded for layers to ~
-          work..."))
+;; ** Dependencies
+
+(unless (and (find-package 'slippery-chicken) (find-package 'clm))
+  (error "slippery chicken and clm need to be installed and loaded for layers ~
+          to work..."))
+
+(unless (find-package :cl-pcg)
+  (handler-case
+      (ql:quickload :cl-pcg)
+    (error (condition)
+      (error "please make sure that the cl-pcg library is installed correctly"
+	     ))))
+
+;; ** Package
 
 (defpackage :layers
   (:use :common-lisp :slippery-chicken)
   (:nicknames :ly))
 
-(defun ly ()
-  (in-package :layers))
+(defun ly () (in-package :layers))
 
-(ly)
+(in-package :layers)
 
-(unless (find-package :cl-pcg)
-  (ql:quickload :cl-pcg))
+;; ** Paths
+(defparameter *layers-home-dir*
+  (format nil "~A" (asdf:system-source-directory 'layers)))
 
-(unless (fboundp 'os-path)
-  (defun os-path (path)
-    #+(or win32 win64) (os-format-path path 'windows)
-    #-(or win32 win64) (os-format-path path)))
-
-(unless (fboundp 'directory-name)
-  (defun directory-name (path)
-    (when (> (length path) 0)
-      (loop until (char= #\/ (elt path (1- (length path)))) do
-	    (setf path (subseq path 0 (1- (length path)))))
-      path)))
-
-(defun parent-dir (path)
-  (subseq path 0 (position #\/ path :from-end t)))
-
-;; is os-path neccessary here?
 (defparameter *layers-src-dir*
-  (directory-name (namestring *load-pathname*)))
+  (format nil "~asrc/" *layers-home-dir*))
 
 (defparameter *src-dir* *layers-src-dir*)
 
-(defparameter *layers-home-dir* (parent-dir *layers-src-dir*))
+(defun load-layers-src-file (file)
+  (load (format nil "~a~a" *layers-src-dir* file)))
+
+;; ** Load
 
 (defun quiet-warning-handler (c)
   (let ((r (find-restart 'muffle-warning c)))
@@ -98,16 +88,14 @@
 (when (ignore-errors clm::*clm*)
   (handler-bind ((warning
 		  #'quiet-warning-handler))
-    (load (compile-file (format nil "~a~a" *src-dir* "analysis.lsp")))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "analysis.lsp")))
     ;; Michael Edwards samp1 instrument, but you can select the input channel:
     ;; It would also be possible to use samp5 (slippery chicken).
-    (load (compile-file (probe-file (format nil "~a~a" *src-dir*
-					    "samp0.ins"))))))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "Samp0.ins")))))
 
 (import '(clm::samp0))
 
-;; *** load-all
-;;; load most of the files
+;;; load all .lsp files
 (defun load-all ()
   (dolist (file '("globals.lsp"
 		  "utilities.lsp"
@@ -126,14 +114,15 @@
 		  "transitions.lsp"
 		  "fplay.lsp"
 		  ))
-    (load (probe-file (format nil "~a~a" *src-dir* file)))))
+    (load-layers-src-file file)))
 (load-all)
 
 (when (ignore-errors clm::*clm*)
   (handler-bind ((warning
 		  #'quiet-warning-handler))
-    (load (compile-file (format nil "~a~a" *src-dir* "export-with-clm.lsp")))))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "export-with-clm.lsp")))))
 
+;; *** export symbols
 (let ((pack (find-package :layers)))
   (do-all-symbols (sym pack)
     ;; these are most of the symbol names that are also found in sc, but since

@@ -15,7 +15,7 @@
 (defgeneric next-trigger (layers-object &key current-time trigger-all)
   (:documentation "called for triggering new sounds"))
 
-(when *load-risky-files*
+#+nil(when *load-risky-files*
   (load (format nil "~a~a" *src-dir* "export-with-clm.lsp")))
 
 ;; *** conditions
@@ -36,7 +36,7 @@
 (define-condition id-not-found (error)
   ((text :initarg :text :reader text)))
 
-;;; *** load-from-file
+;; *** load-from-file
 (defmethod load-from-file (file)
   (eval (read-from-file file)))
 

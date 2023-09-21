@@ -3,6 +3,8 @@
 
 Layers is a generative music library for common lisp, using Slippery Chicken and CLM for a lot of their utilities and Pure Data as a real time sampler. It's purpose is not sound design or synthesis but rather that of a complex analysis and sampling system. Layers might be used in real time or to export either audio files or data structures for musical application.
 
+This software is in a weird state, in that it depends immensely on Michael Edwards' slippery chicken, especially its utilities, but builds its entire separate object infastructure. This would not have been necessary, but it is too late now I think.
+
 ** Requirements
 
 - [[https://ccrma.stanford.edu/software/clm/][Common Lisp Music]]
@@ -11,7 +13,26 @@ Layers is a generative music library for common lisp, using Slippery Chicken and
 
 ** Installation
 
-CLM and Slippery Chicken must already be installed. Then copy the source code and run ".../layers/src/all.lsp"
+CLM and Slippery Chicken must already be installed. You have two main options to then install the package:
+
+**** using asdf / Quicklisp
+
+Copy the source code into a directory that is read by asdf, then run either
+
+#+BEGIN_SRC lisp
+(require :asdf)
+(asdf:load-system 'layers)
+#+END_SRC#+source: 
+
+or
+
+#+BEGIN_SRC lisp
+(ql:quickload :layers)
+#+END_SRC#+source:
+
+**** NOT using asdf / Quicklisp
+
+Copy the source code and load "path/to/layers/src/all.lsp"
 
 ** Example Usage
 
