@@ -10,12 +10,13 @@ This software is in a weird state, in that it depends immensely on Michael Edwar
 - [[https://ccrma.stanford.edu/software/clm/][Common Lisp Music]]
 - [[https://michael-edwards.org/sc/][Slippery Chicken]]
 - ([[https://puredata.info/][Pure Data]])
+- [[https://docs.stevelosh.com/cl-pcg/][cl-pcg]]
 
 ** Installation
 
 CLM and Slippery Chicken must already be installed. You have two main options to then install the package:
 
-**** using asdf / Quicklisp
+*** using asdf / Quicklisp
 
 Copy the source code into a directory that is read by asdf, then run either
 
@@ -30,9 +31,10 @@ or
 (ql:quickload :layers)
 #+END_SRC#+source:
 
-**** NOT using asdf / Quicklisp
+*** NOT using asdf / Quicklisp
 
-Copy the source code and load "path/to/layers/src/all.lsp"
+Copy the source code and load "path/to/layers/src/all.lsp".
+If you don't use Quicklisp at all, make sure to also have the cl-pcg library installed.
 
 ** Example Usage
 
