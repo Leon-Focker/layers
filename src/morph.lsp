@@ -30,6 +30,7 @@
 (export 'mod1 :ly)
 
 ;; ** envelope-interp
+;;; slippery chicken provides #'interpolate. Is there a difference?
 ;;; copied from the common lisp music package
 (defun envelope-interp (x fn &optional (base 1)) ;order of args is like NTH
   (cond ((null fn) 0.0)			;no data -- return 0.0
@@ -186,11 +187,48 @@
 ;;;  for a million different things. A very simple usecase might be a slight
 ;;;  swing in a drum pattern (using a static env '(0 .2)) for example. Rhythms
 ;;;  could also be humanized by very long varying envelopes with small changes.
+;;; length - also analog to morph-patterns, instead of a duration supply the
+;;;  length for the final list.
 (defun interpolate-patterns (patterns duration
 			     &optional overlap-duration
 			       transition-ratios
-			       transition-envelopes)
+			       transition-envelopes
+			       length)
+  ;; outsource work to -aux function that handles patterns and envelopes
+  (interpolate-patterns-aux patterns duration
+			    overlap-duration transition-ratios
+			    transition-envelopes
+			    nil length))
+
+;; ** interpolate-envelopes
+;;; todo - Doc envelopes
+;;; todo - turn back into envelopes
+(defun interpolate-envelopes (envelopes duration
+			      &optional
+				transition-ratios
+				transition-envelopes
+				length)
+  (unless (and (listp envelopes)
+	       (loop for env in envelopes always
+		    (and (listp env) (= 0 (mod (length env) 2)))))
+    (error "the supplied envelopes seem to be malformed. ~
+            Or do you want to use interpolate-patterns?"))
+  ;; outsource work to -aux function that handles patterns and envelopes
+  (interpolate-patterns-aux envelopes duration
+			    t transition-ratios
+			    transition-envelopes t length))
+
+;; the function doing all the work:
+(defun interpolate-patterns-aux (patterns duration
+				 &optional overlap-duration
+				   transition-ratios
+				   transition-envelopes
+				   patterns-are-envelopes
+				   length)
   ;; sanity checks
+  (unless (listp transition-ratios)
+    (error "transition-ratios must be nil or a list but is: ~a"
+	   transition-ratios))
   (if transition-ratios
       (unless (= (1- (length patterns)) (length transition-ratios))
 	(error "different number of pattern-transitions and transition-ratios ~
@@ -203,60 +241,93 @@
             but is ~a" transition-envelopes))
   (unless (listp (first transition-envelopes))
     (setf transition-envelopes (list transition-envelopes)))
+  (unless (or (not length) (numberp length))
+    (error "length in interpolate-patterns should either be nil or a number: ~
+            ~&~a" length))
   ;; check that all envelopes have (= 0 (mod (length env) 2))
   (unless (loop for i in transition-envelopes always (= 0 (mod (length i) 2)))
     (error "interpolate-patterns detected a weird envelope in ~
             transition-envelopes"))
-  (unless (typep patterns 'list)
-    (error "morph-patterns needs patterns to be a list: ~a" patterns))
-  (unless (> duration 0)
-    (error "for morph-patterns, duration must be greater than 0: ~a" duration))
+  (unless (listp patterns)
+    (error "interpolate-patterns needs patterns to be a list: ~a" patterns))
+  (unless (> (or length duration) 0)
+    (error "for interpolate-patterns, duration or length must be greater than ~
+            0: ~a" (or length duration)))
+  (when length (setf overlap-duration t))
   (let* ((ratio-sum (loop for i in transition-ratios sum i))
 	 (trans-durs (loop for i in transition-ratios
-			collect (* (/ i ratio-sum) duration)))
+			collect (* (/ i ratio-sum) (or length duration))))
 	 (trans-starts (append '(0) (loop for i in trans-durs
 				       sum i into sum collect sum)))
-	 (tr-env-len (length transition-envelopes)))
-    ;; the fun part:
-    (loop for i from 0
-       for env = (nth (mod i tr-env-len) transition-envelopes)
-       for sum = 0 then (+ sum (rational rhythm))
-       for n = (decider (/ sum duration) trans-durs)
-       for interp = (envelope-interp
-		     (rational (/ (- sum (nth n trans-starts))
-				 (- (nth (1+ n) trans-starts)
-				    (nth n trans-starts))))
-		     env)
-       for pattern1 = (nth n patterns)
-       for pattern2 = (nth (1+ n) patterns)
-       for event1 = (nth (mod i (length pattern1)) pattern1)
-       for event2 = (nth (mod i (length pattern2)) pattern2)
-       for rhythm = (rational (+ (* (- 1 (mod1 interp))
-				    (if (listp event1) (car event1) event1))
-				 (* (mod1 interp)
-				    (if (listp event2) (car event2) event2))))
-       for event = (if (listp (if (>= (mod1 interp) 0.5)
-				  event2
-				  event1))
-		       (list rhythm)
-		       rhythm)
-       until (>= (+ sum rhythm) duration)
-       collect event into ls
-       finally
-       ;; add a difference, to bring sequence to its max length
-       ;; if the rhythm-value was a rest, the added difference will
-       ;; too be a rest
-	 (let* ((difference (- (rational duration) sum)))
-	   (unless (sc::equal-within-tolerance difference 0)
-	     (cond (overlap-duration (setf ls (append ls (list event))))
-		   ((atom event) (setf ls (append ls (list difference))))
-		   (t (setf ls (append ls (list (list difference))))))))
-       ;; return the final rhythm sequence:
-	 (return ls))))
+	 (tr-env-len (length transition-envelopes))
+	 (x-list '())
+	 (y-list '()))
+    ;; if patterns are envelopes, split into two lists
+    (if patterns-are-envelopes
+	(loop for pattern in patterns do
+	     (loop for x in pattern by #'cddr and y in (cdr pattern) by #'cddr
+		collect x into ls1 
+		collect y into ls2
+		finally (push ls1 x-list)
+		  (push ls2 y-list))
+	   finally (setf x-list (reverse x-list)
+			 y-list (reverse y-list)))
+	(setf x-list patterns))
+    ;; the fun part, but as a closure:
+    (flet ((interp-pttns-aux-aux (patterns)
+	     (loop for i from 0
+		for env = (nth (mod i tr-env-len) transition-envelopes)
+		for sum = 0 then (+ sum (rational rhythm))
+		for progress = (if length (/ i length) (/ sum duration))
+		for n = (decider progress trans-durs)
+		for interp = (envelope-interp
+			      (rational (/ (- sum (nth n trans-starts))
+					   (- (nth (1+ n) trans-starts)
+					      (nth n trans-starts))))
+			      env)
+		for pattern1 = (nth n patterns)
+		for pattern2 = (nth (1+ n) patterns)
+		for event1 = (nth (mod i (length pattern1)) pattern1)
+		for event2 = (nth (mod i (length pattern2)) pattern2)
+		for rhythm = (rational (+ (* (- 1 (mod1 interp))
+					     (if (listp event1) (car event1)
+						 event1))
+					  (* (mod1 interp)
+					     (if (listp event2) (car event2)
+						 event2))))
+		for event = (if (listp (if (>= (mod1 interp) 0.5)
+					   event2
+					   event1))
+				(list rhythm)
+				rhythm)
+		until (if length
+			  (>= i (1- length))
+			  (>= (+ sum rhythm) duration))
+		collect event into ls
+		finally
+		;; add a difference, to bring sequence to its max length
+		;; if the rhythm-value was a rest, the added difference will
+		;; too be a rest
+		  (let* ((difference (- (rational duration) sum)))
+		    (unless (sc::equal-within-tolerance difference 0)
+		      (cond (overlap-duration
+			     (setf ls (append ls (list event))))
+			    ((atom event)
+			     (setf ls (append ls (list difference))))
+			    (t (setf ls
+				     (append ls (list (list difference))))))))
+		;; return the final rhythm sequence:
+		  (return ls))))
+      ;; if envelopes, do twice:
+      (if patterns-are-envelopes
+	  (values (interp-pttns-aux-aux x-list)
+		  (interp-pttns-aux-aux y-list))
+	  (interp-pttns-aux-aux x-list)))))
 
 (export '(layers
 	  morph-patterns
 	  interpolate-patterns
+	  interpolate-envelopes
 	  envelope-interp))
 
 ;; EOF morph.lsp
