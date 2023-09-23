@@ -152,6 +152,49 @@
     (cdr list)
     (cons (car list) (remove-nth (1- n) (cdr list)))))
 
+;; *** rotate
+;;; rotate a list so that it starts with the specified index.
+(defun rotate (ls &optional (new-start-index 1))
+  (let* ((len (length ls))
+         (effective-index (mod new-start-index len)))
+    (append (subseq ls effective-index)
+            (subseq ls 0 effective-index))))
+
+;; *** depth
+;;; the depth of a (possibly) nested list
+(defun depth (ls)
+  (labels ((iter (ls level)
+		 (if (listp ls)
+                     (let ((sublevels '()))
+                       (dolist (s ls)
+			 (push (iter s (1+ level)) sublevels))
+                       (apply #'max (cons level sublevels)))
+                     level)))
+    (iter ls 0)))
+
+;; *** rqq-depth
+(defun rqq-depth (ls)
+  (apply #'max (labels ((iter (ls level)
+			      (loop for div in ls append
+				   (if (listp div)
+				       (iter (second div) (1+ level))
+				       (list level)))))
+		 (iter (second ls) 0))))
+
+;; *** normalize-depth
+;;; Modifies a list, wrapping parts of it in new lists,
+;;; so that every element is at uniform depth.
+(defun normalize-depth (ls &optional (in-place t))
+  (unless in-place (setq ls (copy-seq ls)))
+  (let ((max-depth (loop for element in ls maximize (depth element))))
+    (loop for i below (length ls)
+       do (loop while (< (depth (nth i ls)) max-depth)
+             do (setf (nth i ls) (list (nth i ls)))))
+    (loop for element in ls
+       do (when (listp element)
+            (normalize-depth element)))
+    ls))
+
 ;; *** mirrors
 ;;; formerly calles alternating-modulo
 ;;; mirrors input value between min and max value
@@ -282,20 +325,129 @@
 
 ;; *** get-beat-prox
 ;;; check how close a number is to a "beat" aka an even subdivision of 1
-;;; number must be between 0 and 1
-;;; (get-beat-prox 1)   => 0
-;;; (get-beat-prox .5)  => 1
-;;; (get-beat-prox .75) => 2
-;;; (get-beat-prox .7)  => 3
+;;; => As I now know, this is basically a variation on Thomae's function,
+;;; but with a set amount of levels and inverted weighting (ON the beat = 0)
+;;; (loop for i from 0 to 1 by .125 collect (get-beat-prox i))
+;;; => (0 3 2 3 1 3 2 3 0)
+;;;
+;;; (visualize (loop for i from 0 to 1 by .01 collect (get-beat-prox i 7)))
+;;; " _ _   _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _   _ _" 
+;;; "  _   _   _   _   _   _   _   _   _   _   _   _   _   _   _   _ " 
+;;; "                                                                " 
+;;; "    __      _       _       _       _       _       _      __   " 
+;;; "        _               _               _               _       " 
+;;; "                _                               _               " 
+;;; "                                                                " 
+;;; "                                _                               " 
+;;; "_                                                               "
 (defun get-beat-prox (i &optional (how-many-levels 4))
-  (unless (<= 0 i 1) (error "i must be between 0 and 1, not ~a" i))
+  ;;(unless (<= 0 i 1) (error "i must be between 0 and 1, not ~a" i))
   (unless (and (integerp how-many-levels) (< 1 how-many-levels 100))
     (error "silly value for how-many-levels: ~a" how-many-levels))
   (round (log (denominator
 	       (rational
-		(/ (round (* i (expt 2 (1- how-many-levels))))
+		(/ (round (* (mod i 1) (expt 2 (1- how-many-levels))))
 		   (expt 2 (1- how-many-levels)))))
 	      2)))
+
+;; alias
+(setf (symbol-function 'beat-proximity) #'get-beat-prox)
+(setf (symbol-function 'thomaes-function) #'get-beat-prox)
+
+
+;; *** rqq-to-indispensability-function
+;;; This is baiscally a really flexible and complicated version of
+;;; get-beat-prox, inspired by Clarence Barlows rhythm theory of
+;;; indispensibility and Marc Evans implementation of it.
+;;; Instead of repeatedly splitting a bar into halfs, as get-beat-prox does
+;;; it, you can specify any division of a bar by using rqq notation.
+;;; Also, every beat (or division) has a unique weight.
+;;; Compare this:
+;;;
+;;; (loop for i from 0 to 1 by .125 collect (get-beat-prox i))
+;;; => (0 3 2 3 1 3 2 3 0)
+;;;
+;;; (loop for i from 0 to 1 by 0.125 collect
+;;;      (funcall (rqq-to-indispensability-function
+;;;		'(2 ((2 ((2 (1 1)) (2 (1 1)))) (2 ((2 (1 1)) (2 (1 1))))))) i))
+;;; => (0 7 3 5 1 6 2 4 0)
+;;;
+;;; (loop for i from 0 to 1 by 0.125 collect 
+;;;	 (funcall (rqq-to-indispensability-function 
+;;;		   '(8 (1 1 1 1 1 1 1 1))) i))
+;;; => (0 7 6 5 4 3 2 1 0)
+;;;
+;;; when step-function? is t, don't interpolate between values
+;;;
+;;; RETURNS a function, whose input should be a number
+(defun rqq-to-indispensability-function (rqq &optional step-function?)
+  (let* ((dur-list (mapcar #'(lambda (x) (/ 1 x))
+			   (mapcar #'parse-rhythm-symbol
+				   (remove 'sc::{
+					   (remove 'sc::}
+						   (remove '- (rqq-divide rqq)))))))
+	 (sum  (loop for i in dur-list sum i))
+	 (indis (rqq-to-indispensability-aux rqq))
+	 (env '()))
+    (setf dur-list (mapcar #'(lambda (x) (/ x sum)) dur-list))
+    (setf env (loop for dur in (append dur-list '(0))
+		 and y in (append indis (first (list indis))) 
+		 collect x collect y sum dur into x))
+    (if step-function?
+	(lambda (x) (nth (decider (mod x 1) dur-list) indis))
+	(lambda (x) (envelope-interp (mod x 1) env)))))
+
+(defun indispensability-enumerate (ls)
+  (let* ((fls (flatten ls))
+	 (new-ls (copy-list fls))
+	 (len (length fls))
+	 (mx (apply #'max fls)))
+    (loop for i from 0 to mx
+       with backwards
+       with cnt
+       with n = 0 do
+	 (setf cnt (count i fls))
+	 ;; Stellschraube: wann backwards t
+	 (setf backwards (> i 0))
+	 (if (<= cnt 2)
+	     (loop for el in (if backwards (reverse fls) fls)
+		for j from 0 do
+		  (when (= i el)
+		    (setf (nth (if backwards (- (1- len) j) j) new-ls) n)
+		    (incf n)))
+	     (loop for el in (reverse fls)
+		for j downfrom (1- len)
+		with k = 0
+		with m = n do
+		  (when (= i el)
+		    (setf (nth j new-ls)
+			  (if (and (not backwards)
+				   (= k (1- cnt)))
+			      m
+			      (if backwards n (1+ n))))
+		    (incf n)
+		    (incf k)))))
+    new-ls))
+
+(defun rqq-to-indispensability-aux (rqq)
+  (labels ((iter (ls)
+		 (let* ((len (length ls))
+			(ls (if (<= len 2)
+				(loop for el in ls with i = 0 collect
+				     (if (listp el)
+					 (iter (second el))
+					 (prog1 i (incf i)))) ; incf always?
+				(loop for el in ls
+				   for k from 0
+				   for i = 0 then (- len k)
+				   collect
+				     (if (listp el)
+					 (iter (second el))
+					 i)))))
+		   ;;(print level)
+		   ;;(print ls)
+		   (indispensability-enumerate ls))))
+    (iter (second rqq))))
 
 ;; *** list-interp
 ;;; looks at a list as a series of y values, spaced equally from 0 to max-x
