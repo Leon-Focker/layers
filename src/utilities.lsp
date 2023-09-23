@@ -355,7 +355,7 @@
 (setf (symbol-function 'thomaes-function) #'get-beat-prox)
 
 
-;; *** rqq-to-indispensability-function
+;; *** rqq-to-indispensability and rqq-to-indispensability-function
 ;;; This is baiscally a really flexible and complicated version of
 ;;; get-beat-prox, inspired by Clarence Barlows rhythm theory of
 ;;; indispensibility and Marc Evans implementation of it.
@@ -387,7 +387,7 @@
 					   (remove 'sc::}
 						   (remove '- (rqq-divide rqq)))))))
 	 (sum  (loop for i in dur-list sum i))
-	 (indis (rqq-to-indispensability-aux rqq))
+	 (indis (rqq-to-indispensability rqq))
 	 (env '()))
     (setf dur-list (mapcar #'(lambda (x) (/ x sum)) dur-list))
     (setf env (loop for dur in (append dur-list '(0))
@@ -429,7 +429,7 @@
 		    (incf k)))))
     new-ls))
 
-(defun rqq-to-indispensability-aux (rqq)
+(defun rqq-to-indispensability (rqq)
   (labels ((iter (ls)
 		 (let* ((len (length ls))
 			(ls (if (<= len 2)
@@ -444,8 +444,6 @@
 				     (if (listp el)
 					 (iter (second el))
 					 i)))))
-		   ;;(print level)
-		   ;;(print ls)
 		   (indispensability-enumerate ls))))
     (iter (second rqq))))
 
