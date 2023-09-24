@@ -137,10 +137,13 @@
 |#
 
 ;; *** index-of-element
+;;; this is the same as #'position...
 (defun index-of-element (element ls)
+  (error "please replace index-of-element with #'position"))
+#|(defun index-of-element (element ls)
   (unless (and ls (listp ls)) (error 'no-value))
   (let* ((len (length ls)))
-    (- len (length (member element ls)))))
+    (- len (length (member element ls)))))|#
 
 ;; *** remove-nth
 ;;; remove nth element from list
@@ -467,6 +470,9 @@
 ;;; curried list-interp
 (defun make-list-into-function (list duration) ; &optional last-at-what-x)
   (lambda (x) (list-interp x list duration)))
+
+;; alias
+(setf (symbol-function 'list-to-function) #'make-list-into-function)
 
 ;; *** flatness
 ;;; this might not be useful at all for anything but spectra
