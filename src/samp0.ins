@@ -1,0 +1,482 @@
+;;; -*- syntax: common-lisp; base: 10; mode: lisp -*-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; File:             samp1.ins
+;;;
+;;; Purpose:          A 'sampling' instrument: performs high-quality
+;;;                   sampling-rate conversion (transposition)  of a sound
+;;;                   file.  
+;;;
+;;;                   When duration is nil the instrument automatically plays
+;;;                   the whole input file either forwards (or backwards: if
+;;;                   <reverse> is t).  
+;;;
+;;;                   If output duration > input duration then the whole input
+;;;                   file will be played forwards then backwards until the
+;;;                   duration is used up. 
+;;;
+;;;                   See the instrument parameters for more possibilities.
+;;;
+;;; Author:           Michael Edwards - m@michael-edwards.org
+;;;
+;;;
+;;; $$ Last modified: 10:00:02 Tue Jul  5 2011 BST
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package :clm)
+
+(definstrument samp0 
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Beginning of Instrument Parameters
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (file                     ;; Input file path
+   time                     ;; Output file time in seconds
+   &key                     ;; the following parameters are optional
+   (duration nil)           ;; Output file duration; when nil then the whole
+                            ;; input file will be played. 
+                            ;; In Lisp, Yes/No or True/False (so-called
+                            ;; Booleans) are indicated by T and Nil.
+   (reflect nil)            ;; When duration is nil, whether the input file
+                            ;; should play forwards then backwards.
+   (reverse nil)            ;; Begin going backwards?
+   (start 0)                ;; Input file start time (seconds).
+   (end 0)                  ;; Input-file end time (seconds).
+   (srt 1.0)                ;; Sampling-rate Conversion: 1 = no 
+                            ;; transposition, 2 = octave higher, 0.5 = octave
+                            ;; lower etc.
+   (width 5)                ;; How many samples to convolve with the sinc table
+                            ;; (the higher the better but also the slower the
+                            ;; processing).
+   (srt-env '(0 0 100 0))   ;; Sampling-rate Conversion Envelope (glissando);
+                            ;; when the y value is 0 there is no transposition
+                            ;; beyond that of srt. 
+   (srt-scaler 1.0)         ;; Scaler for srt-env.
+   (amp 1.0)                ;; Amplitude, usually > 0.0 <= 1.0
+   (amp-env '(0 1 100 1))   ;; Amplitude Envelope, y-values, like amplitude,
+                            ;; are usually > 0.0 <= 1.0.  amp is used as a
+                            ;; scaler for this envelope. 
+   (degree 45)              ;; Stereo Panning:  0 = left, 45 = middle, 90 =
+                            ;; right.
+   (distance 0)             ;; A distance effect.  This is used to create a
+                            ;; combination of direct and reverberated signal.
+                            ;; Try values between 0 (no effect) and 100.
+   (rev-env '(0 1 100 1))   ;; Reverberation Envelope
+   (rev-amt 0)              ;; Reverberation.  0.1 quite a lot. This value is 
+   ;; a scaler for rev-env
+   (channel 0)              ;; which channel of the input file will be sampled
+   (printing t))            ;; Whether the number of seconds processed should
+                            ;; be printed to the lisp listener whilst running.
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; End of Instrument Parameters, beginning of Instrument Setup Code
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (let* ((st (floor (* time *srate*)))   ;; Output File Start Sample
+         (start-sample (if (zerop start) ;; Input File Start Sample
+			   0
+			   (floor (* *srate* start))))
+         ;; Input File End Sample
+
+         ;; this should work soon so that we can reference input files just by
+         ;; file name and not full path
+         (end-sample (if (zerop end) 
+                         (sound-framples file)
+                         (floor (* *srate* end))))
+          #|
+         (end-sample
+          (let* ((f (open-input* file))
+                 ;; sound-frames won't (yet) work unless there's a full path
+                 ;; so we have to pass it the IO structure if we're using
+                 ;; *clm-search-path*  
+                 (frames (sound-frames f)))
+            (close-input f)
+            (if (zerop end)
+                frames
+                (floor (* *srate* end)))))
+         |#
+         ;; Input File Input/Output (I/O) Structure
+         (f (open-input* file :start (if reverse
+                                         end-sample
+                                         start-sample)
+			 :channel channel))
+         ;; The Sampling-Rate Conversion (SRC) Unit Generator
+         (src-gen (make-src :input f :srate srt :width width))
+         ;; The duration (seconds) of the input file, taking into consideration
+         ;; whether we're reflecting or not. 
+         (dur-full (/ (* (if reflect 2 1) 
+                         (- end-sample start-sample))
+                      srt
+                      *srate*))
+         ;; The actual output duration we'll use (seconds).
+         (dur (if duration duration dur-full))
+         ;; The Sound Location Unit Generator
+         (loc (make-locsig :degree degree :distance distance :reverb
+                           rev-amt)) 
+         ;; The SRC envelope
+         (senv (make-env :envelope srt-env :scaler srt-scaler :offset 0.0 
+                         :duration dur))
+         ;; The amplitude envelope
+         (ampf (make-env :envelope amp-env :scaler amp 
+                         :duration dur)) 
+         ;; The reverb envelope
+         (renv (make-env :envelope rev-env :scaler rev-amt   
+                         :duration dur))
+         (count 0) ;; used for printing only
+         (ml 0)    ;; the current sample location of the SRC generator
+         ;; The output file end sample
+         (nd (+ st (floor (* *srate* dur)))))
+    (when printing (format t "~&Start time ~a~%" time))
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; End of the setup code, beginning of the run loop (sample generation)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (run ;; This is the part that CLM translates into C, for speed
+     (loop for i from st to nd do ;; from output file start sample to end
+          (when printing          ;; print out each second we've computed
+            (if (= count *srate*)
+                (progn
+                  (setq count 1)
+                  (clm-print "~d secs " (round (/ i *srate*))))
+                (incf count)))
+        ;; get the current sample
+          (setf ml (mus-location src-gen))
+        ;; if we're past the last input sample start going backwards.
+          (when  (>= ml end-sample) 
+            (setf (mus-increment src-gen) (- srt)))
+        ;; similarly, if we're before the first input sample, start going
+        ;; forwards. 
+          (when (<= ml start-sample)
+            (setf (mus-increment src-gen) srt))
+        ;; if we're reverbing, set the right reverb amount from the rev-env
+          (when *reverb* 
+            (setf (locsig-reverb-ref loc 0) (env renv)))
+        ;; calculate our output sample, scale it by the amp-env and output
+        ;; it in stereo space
+          (locsig loc i (* (src src-gen (env senv))
+                           (env ampf)))))
+    ;; close our input file
+    (close-input f)))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; End of definistrument
+    ;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+To comment out bigger blocks of text/code put it between #| and |#
+
+with-sound examples for samp1:
+
+
+
+;;; Simply play the whole input file unchanged and accept default CLM and
+;;; instrument state  
+(with-sound ()
+  (samp1 "feelin-beg.wav" 0))
+
+;;; Simply play the whole input file unchanged but output 24-bit samples and
+;;; don't bother printing.
+(with-sound (:data-format mus-l24int :srate 44100) 
+  (samp1 "feelin-beg.wav" 0 :printing nil))
+
+;; Same again but with another input file and an envelope. Also post-process
+;; the output to scale to 99% max amplitude (normalisation).
+(with-sound (:scaled-to .99 :play nil) 
+            (samp1 "josquin2.wav" 0
+                   :start .4
+                   :printing nil
+                   :amp-env '(0 0 50 1 100 0)
+                   :duration 5))
+
+;;; With automatic reflection
+(with-sound (:statistics t :play nil) 
+  (samp1 "feelin.beg.wav" 0 
+         :printing nil
+         :reflect t))
+
+;;; Specify a duration.  If this is longer than the input watch the reflection
+;;; effect. 
+(with-sound ()
+  (samp1 "feelin.beg.wav" 0 
+         :printing t
+         :duration 10))
+
+;;; Play the whole file backwards.
+;;; Also print some useful statistics.
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0 
+         :printing nil
+         :reverse t))
+
+;;; With loads of reverb 
+;;; (Make sure the nrev instrument is loaded)
+(with-sound (:reverb nrev :statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :rev-amt .1))
+
+;; :ld /lisp/clm-3/jcrev.ins
+;;; With a different reverb instrument (have to load in advance)
+(with-sound (:reverb jc-reverb :statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :rev-amt .1))
+
+;;; With lots of reverb and a long reverb decay time
+(with-sound (:reverb nrev :decay-time 5 :statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :rev-amt .1))
+
+;;; Upwards transposition
+;;; Semitones -> srt = (expt 2 (/ x 12.0)))
+;;; srt -> Semitones = (* 12 (log x 2))
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :srt 1.3))
+
+;;; Downwards transposition 
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :srt .5))
+
+;;; Extreme downwards transposition
+;;; If your sound system is good you'll probably hear some high-pitched
+;;; whistling produced by the SRC.
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :end 1
+         :srt .05))
+
+;;; Same transposition but with bigger width, the output file specified, and
+;;; normalisation. 
+;;; The whistling should be gone.
+(with-sound (:output "/temp/width.wav" :statistics t :scaled-to .99)
+  (samp1 "feelin.beg.wav" 0
+         :printing nil
+         :end 1
+         :width 80
+         :srt .05))
+
+;;; Transposition and backwards
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0 
+         :printing nil
+         :srt 1.4
+         :reverse t))
+
+;;; Ping-pong Effect
+(with-sound (:statistics t) 
+  (samp1 "feelin.beg.wav" 0  
+         :printing nil
+         :start 1
+         :duration 6
+         :end 1.5))
+
+;;; Two samp1 calls offset by a second.
+(with-sound () 
+  (samp1 "josquin2.wav" 0 
+         :printing nil
+         :duration 10
+         :amp-env '(0 1 10 .1 20 1 50 1 55 0 57 0 60 1 80 1 100 0))
+  (samp1 "josquin2.wav" 1 
+         :printing nil
+         :duration 10
+         :amp-env '(0 1 10 .1 20 1 50 1 55 0 57 0 60 1 80 1 100 0)))
+
+(defun st2srt (ht)
+  (expt 2 (/ ht 12.0)))
+
+(with-sound (:channels 8 :scaled-to .99 :reverb nrev 
+                       :output "grains1.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (duration 0.0)
+         (time 0.0))
+    (loop repeat 200 do
+          (setf time (random 5.0))
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :degree (random 360)
+                 :rev-amt .05
+                 :srt (st2srt (nth (random hts-len) hts))
+                 :start .4
+                 :duration (/ time 10)
+                 :amp-env '(0 0 5 1 95 1 100 0)))))
+
+
+;;; highs too dominant--make amp dependant on srt
+(with-sound (:channels 1 :scaled-to .99 :reverb nrev
+                       :output "/zap/grains2.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (time 0.0)
+         (srt 0))
+    (loop repeat 200 do
+          (setf time (random 5.0)
+                srt (st2srt (nth (random hts-len) hts)))
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :rev-amt .05
+                 :srt srt
+                 :start .4
+                 :amp (/ srt)
+                 :duration (/ time 10)
+                 :amp-env '(0 0 5 1 95 1 100 0)))))
+
+;;; more gradual increase in duration
+;;; max function
+;;; also former could result in too small a duration hence max
+;;; introduce plotter
+(with-sound (:channels 1 :scaled-to .99 :decay-time 3 :reverb nrev 
+                       :statistics t :output "grains3.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (time 0.0)
+         (duration 0.0)
+         (plot (init-plot))
+         (srt 0))
+    (loop repeat 200 do
+          (setf time (random 5.0)
+                srt (st2srt (nth (random hts-len) hts))
+                duration (max .001 
+                              (expt (max .001 (/ time 7))
+                                    (min 10 (/ (/ time 7))))))
+          (add-point time duration plot)
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :rev-amt .05
+                 :srt srt
+                 :start .4
+                 :amp (/ srt)
+                 :duration (max .001 
+                                (expt (max .001 (/ time 7))
+                                      (min 10 (/ (/ time 7)))))
+                 :amp-env '(0 0 5 1 95 1 100 0)))
+    (display plot)))
+                    
+
+;;; more gradual increase in duration -- BETTER
+(with-sound (:channels 1 :scaled-to .99 :decay-time 3 :reverb nrev 
+                       :statistics t :output "grains4.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (time 0.0)
+         (tone-duration 0.01)
+         (tone-time 3)
+         (srt 0)
+         (duration 0)
+         (plot (init-plot)))
+    (loop repeat 300 do
+          (setf time (random 8.0)
+                srt (st2srt (nth (random hts-len) hts))
+                duration (max .001
+                              (* time time 
+                                 (/ tone-time) tone-duration)))
+          (add-point time duration plot)
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :rev-amt .05
+                 :srt srt
+                 :start .4
+                 :amp (/ srt)
+                 :duration duration
+                 :amp-env '(0 0 5 1 95 1 100 0)))
+    (display plot)))
+
+;;; more gradual increase in duration -- BETTER AGAIN
+;;; envelopes!
+(with-sound (:channels 1 :scaled-to .99 :decay-time 3 :reverb nrev 
+                       :statistics t :output "grains5.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (time 0.0)
+         (limit 200)
+         (max-time 5.0)
+         (srt 0)
+         (duration)
+         (plot (init-plot)))
+    (loop repeat limit do
+          (setf time (random max-time)
+                srt (st2srt (nth (random hts-len) hts))
+                duration (envelope-interp time '(0 .001 3 .1 5 1)))
+          (add-point time duration plot)
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :rev-amt .05
+                 :srt srt
+                 :start .4
+                 :amp (/ srt)
+                 :duration duration
+                 :amp-env '(0 0 5 1 95 1 100 0)))
+    (display plot)))
+
+;;; with a base argument to the envelope
+;;; and amp dependant on dur
+(with-sound (:channels 1 :scaled-to .99 :decay-time 3 :reverb nrev 
+                       :statistics t :output "grains6.wav")
+  (let* ((hts '(0 3 4 7 9 10 14))
+         (hts-len (length hts))
+         (time 0.0)
+         (limit 200)
+         (max-time 7.0)
+         (srt 0)
+         (duration)
+         (amp 0.0)
+         (dur-plot (init-plot))
+         (amp-plot (init-plot)))
+    (loop repeat limit do
+          (setf time (random max-time)
+                srt (st2srt (nth (random hts-len) hts))
+                duration (envelope-interp 
+                          time (list 0 .001 4 .03 max-time .9)
+                          10)
+                amp (* (/ srt) 
+                       (abs (log duration 10))))
+          (add-point time duration dur-plot)
+          (add-point time amp amp-plot)
+          (samp1 "josquin2.wav" 
+                 time
+                 :printing nil
+                 :rev-amt .05
+                 :srt srt
+                 :start .4
+                 :amp amp
+                 :duration duration
+                 :amp-env '(0 0 5 1 95 1 100 0)))
+    (display dur-plot)
+    (display amp-plot)))
+
+(loop repeat 100 do
+      (let ((time (random 5.0)))
+        (print (max .001 
+                    (expt time 
+                          (min 2 (- 5 time)))))))
+
+(loop repeat 100 for time = (random 5.0) for duration =
+      (max .001 
+                    (expt time 
+                          (min .8 (- 5 time))))
+      ;;maximize duration
+        minimize duration)
+
+(loop repeat 100 for time = (random 5.0) for duration =
+      (max .001 (expt time (- 3 time)))
+      maximize duration)
+        minimize duration
+
+
+
+|#
+
