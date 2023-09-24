@@ -182,10 +182,11 @@
 ;;; transition-envelopes - this controlls the interpolation itself. If nil,
 ;;;  normal linear interpolation is happening. If it is an envelope, the linear
 ;;;  interpolation coefficient is set to (envelope-interp coeff env). If it is
-;;;  a list of envelopes, they are cycled through with mod. This can be useful
-;;;  for a million different things. A very simple usecase might be a slight
-;;;  swing in a drum pattern (using a static env '(0 .2)) for example. Rhythms
-;;;  could also be humanized by very long varying envelopes with small changes.
+;;;  a list of envelopes, they are cycled through with mod. The envelopes should
+;;;  range from 0 to 1. This can be useful for a million different things.
+;;;  A very simple usecase might be a slight swing in a drum pattern (using a
+;;;  static env '(0 .2)) for example. Rhythms could also be humanized by very
+;;;  long varying envelopes with small changes.
 (defun interpolate-patterns (patterns duration
 			     &optional overlap-duration
 			       transition-ratios
