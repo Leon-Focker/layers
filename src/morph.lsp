@@ -55,6 +55,23 @@
 			1.0)))))))
 	(t (envelope-interp x (cddr fn) base))))	;go on looking for x segment
 
+;; ** lists-to-envelopes
+;;;
+(defun lists-to-envelopes (x-list y-list)
+  (unless (= (length x-list) (Length y-list))
+    (error "the lists given to lists-to-envelopes should be of the same length ~
+           but are of length: ~a and ~a" (length x-list) (length y-list)))
+  (let* ((envelopes '()))
+    (loop for x in x-list and y in y-list with new-env with last-x = 0 do
+	 (when (< x last-x)
+	   (push (reverse new-env) envelopes)
+	   (setf new-env '()))
+	 (push x new-env)
+	 (push y new-env)
+	 (setf last-x x)
+       finally (push (reverse new-env) envelopes))
+    (reverse envelopes)))
+
 ;; ** morph-patterns
 ;;; morph between two patterns, using a morphing-function,
 ;;; eg. fibonacci-transition. This morphing-function will determine which
@@ -202,24 +219,36 @@
 			    nil length))
 
 ;; ** interpolate-envelopes
-;;; todo - Doc envelopes
-;;; todo - turn back into envelopes
-(defun interpolate-envelopes (envelopes duration
+;;; similar to interpolate-patterns but takes list of envelopes. These are then
+;;; split into the x-values and y-values, which are then interpolated
+;;; separately. Then envelopes are formed again.
+;;; EXAMPLE
+#|
+(interpolate-envelopes '((0 1  .5 1  1 1) (0 0  .2 3  3 0) (0 1  .2 4  1 1)) 24)
+=> ((0 1 3984589/8388608 7/6 4/3 5/6)
+    (0 3/4 13421773/33554432 5/3 11/6 7/12)
+    (0 1/2 5452595/16777216 13/6 7/3 1/3)
+    (0 1/4 1/4 8/3 17/6 1/12)
+    (0 0 13421773/67108864 37/12 8/3 1/6)
+    (0 1/4 6710887/33554432 10/3 13/6 5/12)
+    (0 1/2 13421773/67108864 43/12 5/3 2/3)
+    (0 3/4 13421773/67108864 23/6 7/6 11/12))
+|#
+(defun interpolate-envelopes (envelopes length
 			      &optional
 				transition-ratios
-				transition-envelopes
-				length)
+				transition-envelopes)
   (unless (and (listp envelopes)
 	       (loop for env in envelopes always
 		    (and (listp env) (= 0 (mod (length env) 2)))))
     (error "the supplied envelopes seem to be malformed. ~
             Or do you want to use interpolate-patterns?"))
   ;; outsource work to -aux function that handles patterns and envelopes
-  (interpolate-patterns-aux envelopes duration
+  (interpolate-patterns-aux envelopes 0
 			    t transition-ratios
 			    transition-envelopes t length))
 
-;; the function doing all the work:
+;; the auxiliary function doing all the work:
 (defun interpolate-patterns-aux (patterns duration
 				 &optional overlap-duration
 				   transition-ratios
@@ -282,7 +311,8 @@
 		for progress = (if length (/ i length) (/ sum duration))
 		for n = (decider progress trans-durs)
 		for interp = (envelope-interp
-			      (rational (/ (- sum (nth n trans-starts))
+			      (rational (/ (- (if length i sum)
+					      (nth n trans-starts))
 					   (- (nth (1+ n) trans-starts)
 					      (nth n trans-starts))))
 			      env)
@@ -319,10 +349,11 @@
 				     (append ls (list (list difference))))))))
 		;; return the final rhythm sequence:
 		  (return ls))))
-      ;; if envelopes, do twice:
+      ;; if envelopes, do for x and y:
       (if patterns-are-envelopes
-	  (values (interp-pttns-aux-aux x-list)
-		  (interp-pttns-aux-aux y-list))
+	  (lists-to-envelopes
+	   (interp-pttns-aux-aux x-list)
+	   (interp-pttns-aux-aux y-list))
 	  (interp-pttns-aux-aux x-list)))))
 
 (export '(layers
