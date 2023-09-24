@@ -122,6 +122,11 @@
 		  #'quiet-warning-handler))
     (load (compile-file (format nil "~a~a" *layers-src-dir* "export-with-clm.lsp")))))
 
+;; **** Tests
+
+;; to load the test suite, load ".../tests/layers-test-suite.lsp"
+;; then (ly-test-test-all)
+
 ;; *** export symbols
 (let ((pack (find-package :layers)))
   (do-all-symbols (sym pack)
