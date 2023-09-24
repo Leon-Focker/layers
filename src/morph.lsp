@@ -190,7 +190,6 @@
 ;;;  long varying envelopes with small changes.
 ;;; length - also analog to morph-patterns, instead of a duration supply the
 ;;;  length for the final list.
->>>>>>> interpolate-envelope
 (defun interpolate-patterns (patterns duration
 			     &optional overlap-duration
 			       transition-ratios
