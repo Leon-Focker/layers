@@ -44,32 +44,92 @@
 
 (ly-deftest utils ()
   (let* ((ls1 '(0 1 2 3 4 5 6 7 8 9))
-	 (ls2 '(0 1 (2) 3 (4 (5) 6) 7)))
+	 (ls2 '(0 1 (2) 3 (4 (5) 6) 7))
+	 (ls3 '(0 1 2 4 -1 6 3 4 2)))
+    (probe-delete (format nil "~a~a" *src-dir* "midi-output.mid"))
     (sc-test-check
       ;; some little helpers:
       (equal (remove-nth 3 ls1) '(0 1 2 4 5 6 7 8 9))
       (equal (rotate ls1 4) '(4 5 6 7 8 9 0 1 2 3))
+      ;; re-order
+      (equal (re-order '(a b c d e) '(4 1 3 2 0)) '(e b d c a))
+      (equal (re-order '(a b c d e) '(3 4 1)) '(d e b a c))
+      (equal (re-order '(a b c d e) '(2 3 4 6 0 1)) '(c d e b a))
+      (equal (re-order '(a b c d e) '(0 3 7 0 7 3 5)) '(a d c b e))
+      (equal (re-order '(a b c d e) '(0 0 0)) '(a b c d e))
+      ;; more small ones
       (= (depth ls2) 3)
+      (= (rqq-depth '(1 ((1 (3)) 1 1))) 1)
       (equal (normalize-depth ls2)
 	     '(((0)) ((1)) ((2)) ((3)) ((4) (5) (6)) ((7))))
       (= (mirrors 10 1 3) 2)
       (equal (get-start-times ls1) '(0 0 1 3 6 10 15 21 28 36))
       (equal (get-durations ls1) '(1 1 1 1 1 1 1 1 1))
       (equal (avoid-repetition '(0 1 2 2 3 4 2)) '(0 1 2 3 4 2))
-      (equal (insert ls1 5 22) '(0 1 2 3 4 22 5 6 7 8 9))
-      (= (funcall (list-to-function '(1 2 3) 1) .5) 2)
-      ;; some cooler ones:
+      (equal (insert '(0 1 2 3 4 5 6 7 8 9) 5 22) '(0 1 2 3 4 22 5 6 7 8 9))
+      (equal (insert-multiple '(0 1 2 3 4 5) '(2 4 2 2 1) '(a b c d e))
+	     '(0 E 1 A C D 2 3 B 4 5))
+      (= (dry-wet 3 5 .2) 3.4)
+      (= (biggest-jump ls3) 7)
+      (= (biggest-jump-up ls3) 7)
+      (= (biggest-jump-down ls3) 5)
+      (equal (reduce-by ls1 2)
+	     '(1/2 5/2 9/2 13/2 17/2))
+      ;; beat prox:
+      (= (get-beat-prox 0) 0)
+      (= (get-beat-prox 1) 0)
+      (= (beat-proximity .66) 3)
+      (= (thomaes-function .66 10) 8)
       (equal (loop for i from 0 to 1 by .125 collect (beat-proximity i))
 	     '(0 3 2 3 1 3 2 3 0))
+      ;; indispensability:
       (equal (loop for i from 0 to 1 by 0.125 collect
 		  (funcall (rqq-to-indispensability-function
 			    '(2 ((2 ((2 (1 1)) (2 (1 1))))
 				 (2 ((2 (1 1)) (2 (1 1)))))))
 			   i))
 	     '(0 7 3 5 1 6 2 4 0))
-      (equal (rqq-to-indispensability '(8 (1 1 1 1 1 1 1 1)))
-	     '(0 7 6 5 4 3 2 1))
-      )))
+      (equal (loop for i from 0 to 1 by 0.125 collect 
+		  (funcall (rqq-to-indispensability-function
+			    '(8 (1 1 1 1 1 1 1 1)))
+			   i))
+	     '(0 7 6 5 4 3 2 1 0))
+      ;; list-interp
+      (equal (loop for i from 1 to 9 by .4 collect
+		  (list-interp i '(0 1 2 3 4 5 6 7 8 9)))
+	     '(1 1.3999999 1.8 2.2 2.6000001 3.0000005 3.4000003
+		3.8000002 4.2000003 4.6000004 5.0 5.4000006 5.8000007
+		6.200001 6.600001 7.000001 7.400001 7.800001
+	       8.200001 8.6 9))
+      ;; list-into-function
+      (= (funcall (list-to-function '(1 2 3) 1) .5) 2)
+      ;; lists-into-envelopes
+      (equal (lists-to-envelopes '(0 1 2 0 3 0.2 4 5 6 1)
+				 '(0 1 2 3 4 5 6 7 8 9))
+	     '((0 0 1 1 2 2) (0 3 3 4) (0.2 5 4 6 5 7 6 8) (1 9)))
+      ;; function-to-env
+      (equal (make-function-into-env #'sin)
+	     '(0 0.0 0.1 0.09983342 0.2 0.19866933 0.3 0.29552022 0.4 0.38941833
+	       0.5 0.47942555 0.6 0.5646425 0.70000005 0.6442177 0.8000001
+	       0.71735615 0.9000001 0.783327))
+      (equal (function-to-env #'(lambda (x) (1+ x)) 0 20 1)
+	     '(0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14
+	       14 15 15 16 16 17 17 18 18 19 19 20 20 21))
+      ;; flatness
+      (= (flatness-of-list '(0 1 2 3 4 5 6 7 8 9)) 0.2008)
+      ;; midi (the test files should be written to tmp...)
+      (lists-to-midi '(e3 54 c2) '(1) '(1 5) :velocity-list '(.1 .4 .8))
+      (file-write-ok (format nil "~a~a" *src-dir* "midi-output.mid"))
+      (equal (midi-file-to-list (format nil "~a~a" *src-dir* "midi-output.mid"))
+       '((1.0 52 1.0 0.09448819 0 2.0) (1.0 36 1.0 0.79527557 0 2.0)
+	 (5.0000005 54 1.0 0.39370078 0 6.0000005)))
+      ;;
+      (= (distance-between-points (vector 3 5 1) (vector 0 0 0)) 5.91608)
+      (= (max-of-array (vector 0 3 6 2 6 1 -9) t) 9)
+      (equal (max-of-array-with-index (vector 0 3 6 2 6 1 -9) t) '(-9 6))
+      (= (get-spectral-centroid '((440 0.5) (630 0.46) (880 0.25))) 603.1405)
+      )
+    (probe-delete (format nil "~a~a" *src-dir* "midi-output.mid"))))
 
 ;; ** morph.lsp
 
@@ -81,10 +141,6 @@
       (= 0 (mod1 0))
       (= .5 (mod1 1.5))
       (= 1 (mod1 2))
-      ;; lists-into-envelopes
-      (equal (lists-to-envelopes '(0 1 2 0 3 0.2 4 5 6 1)
-				 '(0 1 2 3 4 5 6 7 8 9))
-	     '((0 0 1 1 2 2) (0 3 3 4) (0.2 5 4 6 5 7 6 8) (1 9)))
       ;; morph-patterns
       (equal (patterns-to-rhythms-list pts1) '((1 1 1 1 1 1) (1 1 1 1 1)))
       (equal (morph-patterns pts2 25) '(2 3 (6) 3 7 3 (1)))
