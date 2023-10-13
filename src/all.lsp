@@ -40,6 +40,8 @@
 
 ;;;; usage without clm?
 
+;;;; TODO: error cases for lindenmayer and compartmentalise
+
 (in-package :cl-user)
 
 ;; ** Dependencies

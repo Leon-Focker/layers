@@ -72,7 +72,7 @@
       :decay 10)
 
 ;; *** spectral-centroid
-;;; dominant frequency, centroid, flattnes and spread of soundfile.
+;;; dominant frequency, centroid, flatness and spread of soundfile.
 ;;; (function needs new name?)
 ;;; file can either be an array or the path to a file
 (defun spectral-centroid (file &key fft-size (srate 48000))
@@ -134,7 +134,7 @@
 	    (dominant-frequency sf) d))
     (setf (peak sf) (first max))
     (setf (peak-index sf) (second max))
-    (setf (smoothness sf) (list-flatness envelope))
+    (setf (smoothness sf) (flatness-of-list envelope))
     (setf (transient sf) (biggest-jump (reduce-by envelope 50))))
   sf)
 

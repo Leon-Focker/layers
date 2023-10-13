@@ -55,23 +55,6 @@
 			1.0)))))))
 	(t (envelope-interp x (cddr fn) base))))	;go on looking for x segment
 
-;; ** lists-to-envelopes
-;;;
-(defun lists-to-envelopes (x-list y-list)
-  (unless (= (length x-list) (Length y-list))
-    (error "the lists given to lists-to-envelopes should be of the same length ~
-           but are of length: ~a and ~a" (length x-list) (length y-list)))
-  (let* ((envelopes '()))
-    (loop for x in x-list and y in y-list with new-env with last-x = 0 do
-	 (when (< x last-x)
-	   (push (reverse new-env) envelopes)
-	   (setf new-env '()))
-	 (push x new-env)
-	 (push y new-env)
-	 (setf last-x x)
-       finally (push (reverse new-env) envelopes))
-    (reverse envelopes)))
-
 ;; ** morph-patterns
 ;;; morph between two patterns, using a morphing-function,
 ;;; eg. fibonacci-transition. This morphing-function will determine which

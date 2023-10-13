@@ -117,9 +117,9 @@
 	 (z-max (car (last all-z))))
     (if remap
       (loop for sf in (data sfl) do
-	   (setf (x sf) (/ (index-of-element (x sf) all-x) len)
-		 (y sf) (/ (index-of-element (y sf) all-y) len)
-		 (z sf) (/ (index-of-element (z sf) all-z) len)))
+	   (setf (x sf) (/ (position (x sf) all-x) len)
+		 (y sf) (/ (position (y sf) all-y) len)
+		 (z sf) (/ (position (z sf) all-z) len)))
       (loop for sf in (data sfl) do
 	 (setf (x sf) (/ (- (x sf) x-min) (- x-max x-min))
 	       (y sf) (/ (- (y sf) y-min) (- y-max y-min))

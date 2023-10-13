@@ -136,15 +136,6 @@
 	    (cdr ls) 0 (rationalize (car ls)))))
 |#
 
-;; *** index-of-element
-;;; this is the same as #'position...
-(defun index-of-element (element ls)
-  (error "please replace index-of-element with #'position"))
-#|(defun index-of-element (element ls)
-  (unless (and ls (listp ls)) (error 'no-value))
-  (let* ((len (length ls)))
-    (- len (length (member element ls)))))|#
-
 ;; *** remove-nth
 ;;; remove nth element from list
 (defun remove-nth (n list)
@@ -162,6 +153,29 @@
          (effective-index (mod new-start-index len)))
     (append (subseq ls effective-index)
             (subseq ls 0 effective-index))))
+
+;; *** re-order
+;;; take a list and a new-order as input. The latter should be a list of
+;;; indices, which will then be used to re-order the first list. If the 
+;;; new-order list is not long enough, all elements that have not been used will
+;;; be appended. If some index in new-order is too big, the mod will be taken.
+;;; If the same index appears twice, the element following the already chosen 
+;;; one will be taken.
+;;; (re-order '(a b c d e) '(4 1 3 2 0)) => '(e b d c a)
+;;; (re-order '(a b c d e) '(3 4 1)) => '(d e b a c)
+;;; (re-order '(a b c d e) '(2 3 4 6 0 1)) => '(c d e b a)
+;;; (re-order '(a b c d e) '(0 3 7 0 7 3 5)) => '(a d c b e)
+;;; (re-order '(a b c d e) '(0 0 0)) => '(a b c d e)
+(defun re-order (ls new-order)
+  (let* ((len (length ls))
+	 (all-i (loop for i from 0 below len collect i)))
+    (append
+     (loop repeat len for index in new-order for j from 0 collect
+	  (do ((n (mod index len) (mod (+ n 1) len)))
+	      ((member n all-i)
+	       (progn (when (member n all-i) (setf all-i (remove n all-i)))
+		      (nth n ls)))))
+     (loop for n in all-i collect (nth n ls)))))
 
 ;; *** depth
 ;;; the depth of a (possibly) nested list
@@ -258,15 +272,15 @@
 
 ;; *** insert-multiple
 ;;; insert multiple elements on multiple indices in a list
-;;; the same index should only be used once for now
 (defun insert-multiple (ls index-list newelt-list)
   (let* ((len (length newelt-list)))
     (unless (= (length index-list) len)
       (error "both index-list and newelt-list in insert-multiple should have ~
               the same length"))
     (loop for i from 0 and el in ls
-       for mem = (member i index-list)
-       when mem collect (nth (- len (length mem)) newelt-list)
+       when (member i index-list) append
+	 (loop for j in index-list and new in newelt-list
+	    when (= i j) collect new)
        collect el)))
 
 ;; *** dry-wet
@@ -314,7 +328,7 @@
 
 ;; *** reduce-by
 ;;; reduces a list by factor (100 elements to 10 elements, factor 10)
-;;; using average
+;;; using averages
 (defun reduce-by (ls &optional (factor 10))
   (unless (integerp factor)
     (error "reduce-by needs a factor that is an integer, not ~a" factor))
@@ -474,9 +488,37 @@
 ;; alias
 (setf (symbol-function 'list-to-function) #'make-list-into-function)
 
-;; *** flatness
-;;; this might not be useful at all for anything but spectra
-(defun list-flatness (ls)
+;; *** lists-to-envelopes
+;;; combine a list of x-values and one of y-values into an envelope
+(defun lists-to-envelopes (x-list y-list)
+  (unless (= (length x-list) (Length y-list))
+    (error "the lists given to lists-to-envelopes should be of the same length ~
+           but are of length: ~a and ~a" (length x-list) (length y-list)))
+  (let* ((envelopes '()))
+    (loop for x in x-list and y in y-list with new-env with last-x = 0 do
+	 (when (< x last-x)
+	   (push (reverse new-env) envelopes)
+	   (setf new-env '()))
+	 (push x new-env)
+	 (push y new-env)
+	 (setf last-x x)
+       finally (push (reverse new-env) envelopes))
+    (reverse envelopes)))
+
+;; *** make-function-into-env
+(defun make-function-into-env (function &optional (from 0) (to 1) (step .1))
+  (unless (and (numberp from) (numberp to) (numberp step))
+    (error "from, to and step in #'make-function-into-env must be a number"))
+  (unless (<= from to)
+    (error "'from' should be <= than 'to' but they are: ~a ~a" from to))
+  (loop for x from from to to by step collect x collect (funcall function x)))
+
+;; alias
+(setf (symbol-function 'function-to-env) #'make-function-into-env)
+
+;; *** flatness-of-list
+;;; this might not be useful at all for anything but spectra (spectral flatnes)
+(defun flatness-of-list (ls)
   (let ((arithmetic-mean 0)
 	(geometric-mean 0)
 	(len (length ls)))
@@ -547,8 +589,8 @@
 			    velocity-list
 			    (tempo 60)
 			    (channel 0)
-			    (name "test.mid")
-			    dir)
+			    (file (format nil "~a~a" *src-dir*
+					  "midi-output.mid")))
   (when (or (null pitch-list) (null duration-list))
     (error "please provide at least one value in the pitch and the duration ~
             lists in lists-to-midi"))
@@ -578,7 +620,7 @@
 		       channel)))
     (cm::events
      (cm::new cm::seq :name (gensym) :time 0.0 :subobjects events)
-     (format nil "~a~a" (or dir *src-dir*) name)
+     file
      :tempo tempo)))
 
 ;; *** structure-to-midi
