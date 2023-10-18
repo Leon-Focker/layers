@@ -291,20 +291,4 @@
   (loop for ly in (data lys) collect
        (get-id ly)))
 
-;; would be cool but obviously doesn't work for now:
-
-#|
-;; *** layers-to-txt
-;;; saves a layers object into a txt file, so you don't have to reload and
-;;; re-analyse all the samples when restarting the software.
-(defmethod layers-to-txt ((lys layers) &key (dir *src-dir*) (name "*layers*.txt"))
-  (with-open-file (stream (format nil "~a~a" dir name)
-			  :direction :output)
-    (format stream (write-to-string lys))))
-
-;; *** layers-from-txt
-;;; see above
-(defun layers-from-txt (path)
-  )|#
-
 ;;;; EOF layers.lsp

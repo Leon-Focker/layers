@@ -42,8 +42,10 @@
 
 ;; *** start-osc
 ;;; simple function to open the osc-call
-(defun start-osc ()
-  (osc-call :send-ip #(192 168 56 1) :listen-port 5000 :send-port 5000))
+(defun start-osc (&optional ip port)
+  (when ip (unless (vectorp ip)
+	     (error "ip must be a vector of form #(192 168 56 1) but is: ~a" ip)))
+  (osc-call :send-ip (or ip #(192 168 56 1)) :listen-port (or port 5000) :send-port (or port 5000)))
 
 ;; *** layers-has-been-loaded
 ;;; function with no features whatsoever, other files can check wheter this one

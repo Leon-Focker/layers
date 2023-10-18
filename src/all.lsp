@@ -20,6 +20,8 @@
 ;;;; better distinction between restart and reload
 ;;;; set-n is implemented in a kinda dirty way (shouldn't have to call next-trigger) and
 ;;;;  setting n introduces a small general delay, it seems like.
+;;;; what if changing the length in pure data, makes some n impossible? because
+;;;;  reloading with a short length might generate fewer lists in structure...
 
 ;;;; reset-layers should actually reset structure etc without having to reload
 ;;;; what does it currently reset-to?
