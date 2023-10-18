@@ -48,7 +48,7 @@
 		  (when (eq layer-id (get-id layer))
 		    (return layer)))))
     (if ly
-        (play-this ly)
+        (play-this ly :printing *print-to-console*)
 	(error "~&there is no Layer with ID ~a in layers ~a"
 	       layer-id (get-id lys)))))
 
@@ -72,7 +72,7 @@
 					 remaining
 					 (next-trigger-for-layer remaining ly)))))
 	 (next-layers-triggered '()))
-    (format t "~&next-triggers: ~a" next-triggers)
+    (when *print-to-console* (format t "~&next-triggers: ~a" next-triggers))
     ;; here we decide which layers are to be triggered
     ;; usually layers with remaining time < 0.01 are chosen.
     ;; when playback is started, all layers must be triggered
@@ -86,13 +86,15 @@
     ;; set *next-trigger* to the minimal time until the next layer needs one
     (setf *next-trigger* (* 0.01 (round (* 100 (apply #'min next-triggers)))))
     ;; set timer to next-trigger and send list of layers that will be triggered
-    (when current-time (format t "~&current-time: ~a" current-time))
+    (when (and current-time *print-to-console*)
+      (format t "~&current-time: ~a" current-time))
     (append
      (list 'trigger *next-trigger*)
      (loop for ly in next-layers-triggered append
-	  (play-this ly :offset-start (print (if (> (remaining-duration ly) 0.01)
-					  (- (this-length ly) (remaining-duration ly))
-					  0)))))))
+        (play-this ly :printing *print-to-console*
+		      :offset-start (if (> (remaining-duration ly) 0.01)
+			         (- (this-length ly) (remaining-duration ly))
+					  0))))))
 
 ;; *** set-n
 ;;; change the n-for-list-of-durations value even while playing
@@ -282,7 +284,8 @@
 (defun reload-layers (&optional load-all)
   (let ((score *score-file*))
     (when load-all (load-all))
-    (load score)
+    (if score (load score)
+	(warn "*score-file* is nil, so no score is loaded after reload-layers"))
     nil))
 
 ;; *** get-ids

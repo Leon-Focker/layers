@@ -87,6 +87,16 @@
   (setf *total-length* len)
   (format t "~& *total-length* has been set to ~a" *total-length*))
 
+;; *** set-print-to-console
+;;; sets the globals *print-to-console* variable
+(defun set-print-to-console (val)
+  (cond ((= val 0) (setf *print-to-console* nil))
+	((= val 1) (setf *print-to-console* t))
+	(t (error "~&set-print-to-console got value ~a~
+                     but needs either a 0 or 1"
+		  val)))
+  (format t "~& *print-to-console* has been set to ~a" *print-to-console*))
+
 ;; *** set-use-sample-clouds
 ;;; sets the global *total-length* variable to value in seconds
 (defun set-use-sample-clouds (val)
