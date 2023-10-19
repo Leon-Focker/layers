@@ -176,36 +176,49 @@
   (let* ((dir (format nil "~a~a" path-to-folder folder))
 	 (files (sc::get-sndfiles dir))
 	 (names (loop for i in files collect (pathname-name i)))
-	 (ids (loop for name in names collect
-		   (read-from-string (if id-uniquifier
-					 (format nil "~a-~a" id-uniquifier name)
-					 name)))))
+	 (ids '()))
     (when (null files) (warn "no soundfiles found in ~a" dir))
-    (loop for file in files and name in names and id in ids do
-	 (store-file-in-list
-	  (prog1
-	      (let ((sf (make-stored-file
-			 id
-			 file
-			 :markov (loop for i in ids
-				    for markov = (assoc i markov-list)
-				    collect
-				      (list i (if markov
-						  (cadr markov)
-						  1)))
-			 :decay decay
-			 :start start
-			 :directory ""
-			 :panorama panorama
-			 :loop-flag loop-flag)))
-		(cond ((and analyse (not auto-map))
-		       (analyse-soundfile sf))
-		      (auto-map
-		       (map-soundfile sf :f1 f1 :f2 f2 :f3 f3
-				      :fft-size fft-size))
-		      (t sf)))
-	    (format t "~&storing file: ~a" id))
-	  sfl))
+    (loop for file in files and name in names
+	  for id = (read-from-string
+		    (if id-uniquifier
+			(format nil "~a-~a" id-uniquifier name)
+			name))
+	  do
+	     (handler-case
+		 (store-file-in-list
+		  (prog1
+		      (let* ((sf (make-stored-file
+				  id
+				  file
+				  :markov '()
+				  :decay decay
+				  :start start
+				  :directory ""
+				  :panorama panorama
+				  :loop-flag loop-flag)))
+			(cond ((and analyse (not auto-map))
+			       (analyse-soundfile sf))
+			      (auto-map
+			       (map-soundfile sf :f1 f1 :f2 f2 :f3 f3
+						 :fft-size fft-size))
+			      (t sf)))
+		    (format t "~&storing file: ~a" id)
+		    ;; if no error until here, push id into ids
+		    (push id ids))
+		  sfl)
+	       (t (error)
+		 ;; This block will be executed for any type of error
+		 (format t "~&An error occurred while storing ~a: ~&~A~%"
+			 file error))))
+    (setf ids (reverse ids))
+    (loop for sf in (data sfl)
+	  for markov = (make-markov-list
+			(id sf)
+			(loop for i in ids
+			      for markov = (assoc i markov-list)
+			      collect (list i (if markov (cadr markov) 1))))
+	  do (setf (markov-list sf) markov)
+	     (check-sanity sf #'error))
     (when auto-scale-mapping
       (auto-scale-mapping sfl :remap remap))))
 
@@ -268,6 +281,21 @@
 		  ;;:sfl-when-longer ',(sfl-when-longer sfl)
 		  ;;:last-played ',(last-played sfl)
 		  ))
+
+;; *** check-sanity
+(defmethod check-sanity ((sfl stored-file-list) &optional (error-fun #'warn))
+  (loop for sf in (data sfl) do (check-sanity sf error-fun))
+  (loop for slot in '(length-min length-max) do
+    (unless (and (numberp (funcall slot sfl)) (<= 0 (funcall slot sfl)))
+      (funcall error-fun "werid ~a for stored-file ~a" slot (id sfl))))
+  (loop for slot in '(sfl-when-longer sfl-when-shorter) do
+    (unless (or (not (funcall slot sfl))
+		(equal (type-of (funcall slot sfl)) 'stored-file-list)
+		(funcall error-fun "werid ~a for stored-file ~a" slot (id sfl)))))
+  (loop for slot in '(last-played) do
+    (unless (or (not (funcall slot sfl))
+		(equal (type-of (funcall slot sfl)) 'stored-file)
+      (funcall error-fun "werid ~a for stored-file ~a" slot (id sfl))))))
 
 ;; *** store-in-text-file
 ;;; store a sfl in a text file, so the analysis can be skipped by reading in

@@ -181,8 +181,7 @@
 			     :name (pathname-name path-from-default-dir)
 			     :path path
 			     :decay decay ; in seconds
-			     :markov-list (make-markov-list nil (if markov
-								    markov
+			     :markov-list (make-markov-list nil (or markov
 								    `((,id 1))))
 			     :duration (soundfile-duration path)
 			     :total-samples (soundfile-framples path)
@@ -196,6 +195,34 @@
 			     :y y
 			     :z z)))
       (if analyse (analyse-soundfile sf) sf))))
+
+;; *** check-sanity
+(defmethod check-sanity ((sf stored-file) &optional (error-fun #'warn))
+  (loop for slot in '(path) do
+    (unless (stringp (funcall slot sf))
+      (funcall error-fun "werid ~a for stored-file ~a" slot (id sf))))
+  (loop for slot in '(duration total-samples samplerate start amplitude
+		      peak decay centroid spread flatness dominant-frequency
+		      smoothness transient)
+	do
+	   (unless (or (not (funcall slot sf)) (numberp (funcall slot sf)))
+	     (funcall error-fun "werid ~a for stored-file ~a" slot (id sf))))
+  (loop for slot in '(x y z) do
+    (unless (and (numberp (funcall slot sf)) (<= 0 (funcall slot sf) 1))
+      (funcall error-fun "werid ~a for stored-file ~a" slot (id sf))))
+  (unless (or (not (markov-list sf))
+	      (equal (type-of (markov-list sf)) 'markov-list))
+    (funcall error-fun "werid ~a for stored-file ~a" 'markov-list (id sf)))
+  (unless (or (not (LENGTH-DEPENDANT-LIST sf))
+	      (equal (type-of (LENGTH-DEPENDANT-LIST sf))
+		     'LENGTH-DEPENDANT-LIST))
+    (funcall error-fun "werid ~a for stored-file ~a"
+	     'LENGTH-DEPENDANT-LIST (id sf)))
+  (unless (or (not (peak-index sf)) (integerp (peak-index sf)))
+    (funcall error-fun "werid ~a for stored-file ~a" 'peak-index (id sf)))
+  (unless (and (numberp (panorama sf)) (<= 0 (panorama sf) 90))
+    (funcall error-fun "werid ~a for stored-file ~a" 'panorama (id sf)))
+  t)
 
 ;; *** make-load-form
 (defmethod make-load-form ((sf stored-file) &optional environment)
