@@ -3,7 +3,7 @@
 
 (in-package :imago)
 
-(defun show-structure (structure-list &optional size-factor name)
+(defun show-structure (structure-list &optional file (size-factor 1))
   (let* ((h (* 100 size-factor))
 	 (w (* 1000 size-factor))
 	 (ls (loop for l in structure-list collect
@@ -22,7 +22,7 @@
 	 (index 0)
 	 (color 0)
 	 (element 0)
-	 (name (or name (format nil "~a~a" ly::*src-dir* "structure.png"))))
+	 (name (or file (format nil "~a~a" ly::*src-dir* "structure.png"))))
     (loop for y from 0 to (1- height) do
 	 (setf n (floor y h))
 	 (setf sublist (nth n ls))
@@ -38,13 +38,14 @@
     (write-png
      (make-instance 'rgb-image
 		    :pixels array)
-     name)))
+     name)
+    name))
 
 (in-package :layers)
 
-(defmethod visualize-structure ((st structure) &optional (size-factor 1) name)
+(defmethod visualize-structure ((st structure) &optional file (size-factor 1))
   (format t "~&visualizing structure: ~a" (id st))
-  (imago::show-structure (reverse (cdr (reverse (data st)))) size-factor name))
+  (imago::show-structure (reverse (cdr (reverse (data st)))) file size-factor))
 
 #|
 (ql:quickload :sketch)
