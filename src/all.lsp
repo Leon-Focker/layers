@@ -114,6 +114,7 @@
 		  "stored-file-list.lsp"
 		  "layer.lsp"
 		  "layers.lsp"
+		  "midi.lsp"
 		  "morph.lsp"
 		  "transitions.lsp"
 		  "fplay.lsp"
