@@ -1,6 +1,8 @@
 ;; ** Midi
 ;;;; Collection of some useful midi input, output and transformation functions
 
+(in-package :layers)
+
 ;; *** lists-to-midi
 ;;; generate a midi file from lists of starting points, length, pitch...
 ;;; if one list is shorter than others it will be wrapped (mod).
