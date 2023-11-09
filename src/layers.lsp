@@ -14,10 +14,11 @@
 ;; *** make-layers
 ;;; create a layers-object and push it into *all-layers*
 (defun make-layers (id list-of-layers)
-  (let ((ly (make-instance 'layers
-			   :id id
-			   :data list-of-layers)))
-    (pushnew ly *all-layers*)))
+  (let ((lys (make-instance 'layers
+			    :id id
+			    :data list-of-layers)))
+    (pushnew lys *all-layers*)
+    lys))
 
 ;; *** add-layer-to-layers
 ;;; add a layer-object to the piece (layers-object)
