@@ -1,4 +1,4 @@
-#N canvas 276 220 702 470 12;
+#N canvas 247 285 864 594 12;
 #X msg 191 384 192.168.56.101;
 #X obj 191 408 s ip;
 #X obj 302 408 s port;
@@ -9,36 +9,45 @@
 #X obj 147 8 loadbang;
 #X floatatom 170 51 5 0 0 0 - - length 0;
 #X floatatom 111 44 5 0 0 0 - - seed 0;
-#X obj 1 1 cnv 15 460 75 empty empty empty 20 12 0 14 #606060 #404040 0;
-#X obj 22 26 tgl 25 0 start empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 93 1 cnv 15 10 10 empty empty seed 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 1 1 cnv 15 10 10 empty empty start/stop 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 211 1 cnv 15 10 10 empty empty reset 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 309 26 tgl 25 0 loop empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 287 1 cnv 15 10 10 empty empty loop 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 233 27 bng 25 250 50 0 reset empty empty 17 7 0 10 #fcfcfc #000000 #000000;
-#X obj 150 1 cnv 15 10 10 empty empty length 20 12 0 14 #606060 #fcfcfc 0;
+#X obj 1 1 cnv 15 460 75 empty empty empty 20 12 0 14 #606060 #404040
+0;
+#X obj 22 26 tgl 25 0 start empty empty 17 7 0 10 #fcfcfc #000000 #000000
+0 1;
+#X obj 93 1 cnv 15 10 10 empty empty seed 20 12 0 14 #606060 #fcfcfc
+0;
+#X obj 1 1 cnv 15 10 10 empty empty start/stop 20 12 0 14 #606060 #fcfcfc
+0;
+#X obj 211 1 cnv 15 10 10 empty empty reset 20 12 0 14 #606060 #fcfcfc
+0;
+#X obj 309 26 tgl 25 0 loop empty empty 17 7 0 10 #fcfcfc #000000 #000000
+0 1;
+#X obj 287 1 cnv 15 10 10 empty empty loop 20 12 0 14 #606060 #fcfcfc
+0;
+#X obj 233 27 bng 25 250 50 0 reset empty empty 17 7 0 10 #fcfcfc #000000
+#000000;
+#X obj 150 1 cnv 15 10 10 empty empty length 20 12 0 14 #606060 #fcfcfc
+0;
 #X msg 113 27 23;
 #X obj 56 201 loadbang;
 #X obj 56 222 s init;
-#N canvas 120 436 1584 484 subpatch 0;
-#N canvas 908 186 913 723 magic 0;
-#X obj 225 428 cyclone/fromsymbol;
-#X obj 249 401 cyclone/fromsymbol;
-#X obj 177 454 cyclone/fromsymbol;
-#X obj 273 374 cyclone/fromsymbol;
-#X obj 177 522 route 0 1 2 3 4 5;
+#N canvas 67 148 1540 471 subpatch 0;
+#N canvas 379 209 913 753 magic 0;
+#X obj 238 428 cyclone/fromsymbol;
+#X obj 262 401 cyclone/fromsymbol;
+#X obj 190 454 cyclone/fromsymbol;
+#X obj 286 374 cyclone/fromsymbol;
+#X obj 190 522 route 0 1 2 3 4 5;
 #X obj 33 19 inlet;
-#X obj 105 666 print lisp;
-#X obj 298 348 cyclone/fromsymbol;
-#X obj 322 321 cyclone/fromsymbol;
-#X obj 346 294 cyclone/fromsymbol;
-#X obj 394 268 cyclone/fromsymbol;
-#X obj 177 214 unpack s s s s s s s s s s s, f 35;
-#X obj 177 492 pack f s f f f f f f s f f, f 35;
-#X obj 419 243 cyclone/fromsymbol;
-#X obj 321 80 cyclone/fromsymbol;
-#X obj 321 110 s timer-offset;
+#X obj 111 666 print lisp;
+#X obj 311 348 cyclone/fromsymbol;
+#X obj 335 321 cyclone/fromsymbol;
+#X obj 359 294 cyclone/fromsymbol;
+#X obj 407 268 cyclone/fromsymbol;
+#X obj 190 214 unpack s s s s s s s s s s s, f 35;
+#X obj 190 492 pack f s f f f f f f s f f, f 35;
+#X obj 432 243 cyclone/fromsymbol;
+#X obj 347 80 cyclone/fromsymbol;
+#X obj 347 110 s timer-offset;
 #X obj 33 103 s sc;
 #N canvas 1289 192 411 411 trigger 0;
 #X obj 60 45 inlet;
@@ -81,9 +90,8 @@
 #X connect 17 0 9 0;
 #X connect 17 1 8 0;
 #X connect 17 1 12 0;
-#X restore 177 184 pd trigger;
+#X restore 190 184 pd trigger;
 #X obj 92 19 print input;
-#X obj 33 50 route LAYERS PRINT TRIGGER SET-N TIMER-OFFSET, f 52;
 #N canvas 841 144 565 603 set-n 0;
 #X obj 60 45 inlet;
 #X obj 60 314 cyclone/fromsymbol;
@@ -113,24 +121,38 @@
 #X connect 10 0 12 2;
 #X connect 11 0 12 0;
 #X connect 12 0 13 0;
-#X restore 249 110 pd set-n;
-#X obj 249 137 route 0 1 2 3 4 5;
-#X obj 196 652 sampler-cluster 1;
-#X obj 215 629 sampler-cluster 2;
-#X obj 235 606 sampler-cluster 3;
-#X obj 254 583 sampler-cluster 4;
-#X obj 273 560 sampler-cluster 5;
+#X restore 268 110 pd set-n;
+#X obj 268 137 route 0 1 2 3 4 5;
+#X obj 209 652 sampler-cluster 1;
+#X obj 228 629 sampler-cluster 2;
+#X obj 248 606 sampler-cluster 3;
+#X obj 267 583 sampler-cluster 4;
+#X obj 286 560 sampler-cluster 5;
+#X obj 465 193 s to-sc;
+#X obj 497 121 r clock;
+#X obj 554 121 r timer;
+#X obj 465 146 pack f f f;
+#X msg 465 169 (set-current-times \$2 \$3);
+#X msg 465 121 1;
+#X obj 33 50 route LAYERS PRINT TRIGGER UPDATE TIMER-OFFSET TIMES TIME-U
+, f 79;
+#X obj 621 142 s to-sc;
+#X obj 653 70 r clock;
+#X obj 710 70 r timer;
+#X obj 621 95 pack f f f;
+#X msg 621 70 1;
+#X msg 621 118 (set-current-times-for-update \$2 \$3);
 #X connect 0 0 12 2;
 #X connect 1 0 12 3;
 #X connect 2 0 12 0;
 #X connect 3 0 12 4;
-#X connect 4 1 22 0;
-#X connect 4 2 23 0;
-#X connect 4 3 24 0;
-#X connect 4 4 25 0;
-#X connect 4 5 26 0;
+#X connect 4 1 21 0;
+#X connect 4 2 22 0;
+#X connect 4 3 23 0;
+#X connect 4 4 24 0;
+#X connect 4 5 25 0;
 #X connect 5 0 16 0;
-#X connect 5 0 19 0;
+#X connect 5 0 32 0;
 #X connect 7 0 12 5;
 #X connect 8 0 12 6;
 #X connect 9 0 12 7;
@@ -150,16 +172,28 @@
 #X connect 13 0 12 10;
 #X connect 14 0 15 0;
 #X connect 17 0 11 0;
-#X connect 19 1 6 0;
-#X connect 19 2 17 0;
-#X connect 19 3 20 0;
-#X connect 19 4 14 0;
-#X connect 20 0 21 0;
-#X connect 21 1 22 1;
-#X connect 21 2 23 1;
-#X connect 21 3 24 1;
-#X connect 21 4 25 1;
-#X connect 21 5 26 1;
+#X connect 19 0 20 0;
+#X connect 20 1 21 1;
+#X connect 20 2 22 1;
+#X connect 20 3 23 1;
+#X connect 20 4 24 1;
+#X connect 20 5 25 1;
+#X connect 27 0 29 1;
+#X connect 28 0 29 2;
+#X connect 29 0 30 0;
+#X connect 30 0 26 0;
+#X connect 31 0 29 0;
+#X connect 32 1 6 0;
+#X connect 32 2 17 0;
+#X connect 32 3 19 0;
+#X connect 32 4 14 0;
+#X connect 32 5 31 0;
+#X connect 32 6 37 0;
+#X connect 34 0 36 1;
+#X connect 35 0 36 2;
+#X connect 36 0 38 0;
+#X connect 37 0 36 0;
+#X connect 38 0 33 0;
 #X restore 328 241 pd magic;
 #N canvas 574 260 450 300 midi 0;
 #X floatatom 9 72 5 0 0 0 - - midi1 0;
@@ -259,7 +293,7 @@
 #X msg 25 87 (set-start-stop \$1 \$2);
 #X obj 25 63 pack f f;
 #X obj 132 44 r timer;
-#N canvas 714 329 1248 406 set-n 0;
+#N canvas 303 371 1248 406 set-n 0;
 #X obj 40 15 r n-1;
 #X obj 40 41 t f b;
 #X msg 72 67 1;
@@ -328,6 +362,7 @@
 #X msg 23 288 (reload-layers t);
 #X obj 24 360 r print-to-console;
 #X msg 24 386 (set-print-to-console \$1);
+#X obj 287 61 r to-sc;
 #X connect 1 0 2 0;
 #X connect 2 0 0 0;
 #X connect 3 0 0 0;
@@ -357,6 +392,7 @@
 #X connect 24 0 0 0;
 #X connect 25 0 26 0;
 #X connect 26 0 0 0;
+#X connect 27 0 0 0;
 #X restore 304 52 pd to-sc;
 #N canvas 832 304 872 528 timer 0;
 #X obj 50 59 r start;
@@ -370,11 +406,13 @@
 #X text 241 28 offset;
 #X obj 146 70 r set-timer;
 #X obj 244 73 r timer-offset;
-#X obj 31 80 tgl 15 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
+#X obj 31 80 tgl 15 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000
+0 1;
 #X obj 244 248 + 0;
 #X obj 60 255 - 10;
 #X obj 50 95 metro 10;
-#X obj 109 428 bng 15 250 50 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000;
+#X obj 109 428 bng 15 250 50 0 empty empty empty 17 7 0 10 #fcfcfc
+#000000 #000000;
 #X obj 109 407 select 0;
 #X obj 163 484 outlet;
 #X obj 284 394 spigot;
@@ -384,7 +422,8 @@
 #X floatatom 284 418 5 0 0 0 - - - 0;
 #X floatatom 146 211 5 0 0 0 - - - 0;
 #X msg 167 171 5000;
-#X obj 116 196 bng 15 250 50 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000;
+#X obj 116 196 bng 15 250 50 0 empty empty empty 17 7 0 10 #fcfcfc
+#000000 #000000;
 #X obj 146 94 * 100;
 #X obj 146 117 int;
 #X obj 146 140 * 10;
@@ -451,8 +490,10 @@
 #X msg 472 30 (print (+ 1 1));
 #X msg 268 88 (current-timer '\$1);
 #X msg 582 163 (pd-test);
-#X msg 463 106 (list 'trigger '3 "E:/code/layers/samples/no-input/accents/accent5.wav" 4.6875 0 10 500 1 0 'ACCENT1 45 1), f 74;
-#X msg 702 169 (list 'TRIGGER '3 "E:/code/layers/samples/phrases/drums/drumloops9.wav" 13.752 0 10 100 1 1 'DRUMLOOPS9 45 1);
+#X msg 463 106 (list 'trigger '3 "E:/code/layers/samples/no-input/accents/accent5.wav"
+4.6875 0 10 500 1 0 'ACCENT1 45 1), f 74;
+#X msg 702 169 (list 'TRIGGER '3 "E:/code/layers/samples/phrases/drums/drumloops9.wav"
+13.752 0 10 100 1 1 'DRUMLOOPS9 45 1);
 #X msg 91 74 2;
 #X msg 7 111 (next-trigger *layers* :current-time \$1);
 #X obj 328 192 osc-sc-eval;
@@ -471,57 +512,97 @@
 #X connect 15 0 16 0;
 #X connect 16 0 0 0;
 #X restore 380 55 pd subpatch;
-#X obj 1 77 cnv 15 460 255 empty empty Layers 20 12 0 14 #b8b8b8 #404040 0;
-#X obj 45 159 vu 15 120 meter1 empty -1 -8 0 10 #404040 #000000 1 0;
-#X obj 19 151 vsl 15 128 0 1 0 0 fader1 midi1 empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 132 158 vu 15 120 meter2 empty -1 -8 0 10 #404040 #000000 1 0;
-#X obj 107 151 vsl 15 128 0 1 0 0 fader2 midi2 empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 220 158 vu 15 120 meter3 empty -1 -8 0 10 #404040 #000000 1 0;
-#X obj 195 151 vsl 15 128 0 1 0 0 fader3 midi3 empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 308 158 vu 15 120 meter4 empty -1 -8 0 10 #404040 #000000 1 0;
-#X obj 283 151 vsl 15 128 0 1 0 0 fader4 midi4 empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 396 158 vu 15 120 meter5 empty -1 -8 0 10 #404040 #000000 1 0;
-#X obj 371 151 vsl 15 128 0 1 0 0 fader5 midi5 empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
+#X obj 1 77 cnv 15 460 255 empty empty Layers 20 12 0 14 #b8b8b8 #404040
+0;
+#X obj 45 159 vu 15 120 meter1 empty -1 -8 0 10 #404040 #000000 1 0
+;
+#X obj 19 151 vsl 15 128 0 1 0 0 fader1 midi1 empty 0 -9 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 132 158 vu 15 120 meter2 empty -1 -8 0 10 #404040 #000000 1
+0;
+#X obj 107 151 vsl 15 128 0 1 0 0 fader2 midi2 empty 0 -9 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 220 158 vu 15 120 meter3 empty -1 -8 0 10 #404040 #000000 1
+0;
+#X obj 195 151 vsl 15 128 0 1 0 0 fader3 midi3 empty 0 -9 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 308 158 vu 15 120 meter4 empty -1 -8 0 10 #404040 #000000 1
+0;
+#X obj 283 151 vsl 15 128 0 1 0 0 fader4 midi4 empty 0 -9 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 396 158 vu 15 120 meter5 empty -1 -8 0 10 #404040 #000000 1
+0;
+#X obj 371 151 vsl 15 128 0 1 0 0 fader5 midi5 empty 0 -9 0 10 #fcfcfc
+#000000 #000000 0 1;
 #X symbolatom 19 103 12 0 0 2 - id1 - 0;
 #X symbolatom 107 103 12 0 0 2 - id2 - 0;
 #X symbolatom 195 103 12 0 0 2 - id3 - 0;
 #X symbolatom 283 103 12 0 0 2 - id4 - 0;
 #X symbolatom 371 103 12 0 0 2 - id5 - 0;
-#X obj 19 288 tgl 15 0 mute-1 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 107 288 tgl 15 0 mute-2 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 195 288 tgl 15 0 mute-3 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 283 288 tgl 15 0 mute-4 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 371 288 tgl 15 0 mute-5 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 1 333 cnv 15 460 50 empty empty Pause_structure_for_each_layer 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 19 358 tgl 15 0 stop-1 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 107 359 tgl 15 0 stop-2 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 195 359 tgl 15 0 stop-3 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 283 359 tgl 15 0 stop-4 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 371 359 tgl 15 0 stop-5 init empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 19 308 hradio 15 1 0 5 n-1 empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;
-#X obj 107 308 hradio 15 1 0 5 n-2 empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;
-#X obj 196 308 hradio 15 1 0 5 n-3 empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;
-#X obj 283 308 hradio 15 1 0 5 n-4 empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;
-#X obj 371 308 hradio 15 1 0 5 n-5 empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;
+#X obj 19 288 tgl 15 0 mute-1 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 107 288 tgl 15 0 mute-2 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 195 288 tgl 15 0 mute-3 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 283 288 tgl 15 0 mute-4 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 371 288 tgl 15 0 mute-5 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 1 333 cnv 15 460 50 empty empty Pause_structure_for_each_layer
+20 12 0 14 #606060 #fcfcfc 0;
+#X obj 19 358 tgl 15 0 stop-1 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 107 359 tgl 15 0 stop-2 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 195 359 tgl 15 0 stop-3 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 283 359 tgl 15 0 stop-4 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 371 359 tgl 15 0 stop-5 init empty 17 7 0 10 #fcfcfc #000000
+#000000 0 1;
+#X obj 19 308 hradio 15 1 0 5 n-1 empty empty 0 -8 0 10 #fcfcfc #000000
+#000000 0;
+#X obj 107 308 hradio 15 1 0 5 n-2 empty empty 0 -8 0 10 #fcfcfc #000000
+#000000 0;
+#X obj 196 308 hradio 15 1 0 5 n-3 empty empty 0 -8 0 10 #fcfcfc #000000
+#000000 0;
+#X obj 283 308 hradio 15 1 0 5 n-4 empty empty 0 -8 0 10 #fcfcfc #000000
+#000000 0;
+#X obj 371 308 hradio 15 1 0 5 n-5 empty empty 0 -8 0 10 #fcfcfc #000000
+#000000 0;
 #X floatatom 19 126 10 0 0 0 - clock-1 - 0;
 #X floatatom 106 126 10 0 0 0 - clock-2 - 0;
 #X floatatom 194 126 10 0 0 0 - clock-3 - 0;
 #X floatatom 282 126 10 0 0 0 - clock-4 - 0;
 #X floatatom 370 126 10 0 0 0 - clock-5 - 0;
-#X obj 434 357 tgl 25 0 directout empty empty 17 7 0 10 #dcdcdc #000000 #000000 0 1;
-#X obj 371 334 cnv 15 10 10 empty empty directout 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 462 1 cnv 15 200 382 empty empty empty 20 12 0 14 #404040 #404040 0;
-#X obj 503 99 vsl 15 128 0 1 0 0 x empty empty 0 -9 0 10 #dcdcdc #000000 #000000 0 1;
-#X obj 559 99 vsl 15 128 0 1 0 0 y empty empty 0 -9 0 10 #dcdcdc #000000 #000000 0 1;
-#X obj 615 99 vsl 15 128 0 1 0 0 z empty empty 0 -9 0 10 #dcdcdc #000000 #000000 0 1;
-#X obj 485 230 cnv 15 5 5 empty empty X 20 12 0 14 #404040 #fcfcfc 0;
-#X obj 541 230 cnv 15 5 5 empty empty Y 20 12 0 14 #404040 #fcfcfc 0;
-#X obj 598 230 cnv 15 5 5 empty empty Z 20 12 0 14 #404040 #fcfcfc 0;
-#X obj 397 26 tgl 25 0 print-to-console empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 360 1 cnv 15 10 10 empty empty printing: 20 12 0 14 #606060 #fcfcfc 0;
-#X obj 547 38 tgl 25 0 sample-clouds empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
-#X obj 521 13 cnv 15 10 10 empty empty use-clouds 20 12 0 14 #404040 #fcfcfc 0;
-#X msg 170 27 500;
+#X obj 434 357 tgl 25 0 directout empty empty 17 7 0 10 #dcdcdc #000000
+#000000 0 1;
+#X obj 371 334 cnv 15 10 10 empty empty directout 20 12 0 14 #606060
+#fcfcfc 0;
+#X obj 462 1 cnv 15 200 382 empty empty empty 20 12 0 14 #404040 #404040
+0;
+#X obj 503 99 vsl 15 128 0 1 0 0 x empty empty 0 -9 0 10 #dcdcdc #000000
+#000000 0 1;
+#X obj 559 99 vsl 15 128 0 1 0 0 y empty empty 0 -9 0 10 #dcdcdc #000000
+#000000 0 1;
+#X obj 615 99 vsl 15 128 0 1 0 0 z empty empty 0 -9 0 10 #dcdcdc #000000
+#000000 0 1;
+#X obj 485 230 cnv 15 5 5 empty empty X 20 12 0 14 #404040 #fcfcfc
+0;
+#X obj 541 230 cnv 15 5 5 empty empty Y 20 12 0 14 #404040 #fcfcfc
+0;
+#X obj 598 230 cnv 15 5 5 empty empty Z 20 12 0 14 #404040 #fcfcfc
+0;
+#X obj 397 26 tgl 25 0 print-to-console empty empty 17 7 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 360 1 cnv 15 10 10 empty empty printing: 20 12 0 14 #606060
+#fcfcfc 0;
+#X obj 547 38 tgl 25 0 sample-clouds empty empty 17 7 0 10 #fcfcfc
+#000000 #000000 0 1;
+#X obj 521 13 cnv 15 10 10 empty empty use-clouds 20 12 0 14 #404040
+#fcfcfc 0;
+#X msg 170 27 50;
 #X connect 0 0 1 0;
 #X connect 3 0 2 0;
 #X connect 5 0 0 0;
