@@ -97,6 +97,7 @@
 	   (when (< dis max-distance) (push (list (/ 1 (+ 0.01 dis)) sf) ls))))
     ;; when no point is close enough, at least return the closest one
     (unless closest (error 'weird-values))
+    (when (= min 0) (setf min 0.00001))
     (when (null ls) (push (list (/ 1 min) closest) ls))
     ;;(print (id (cadar (data (make-subordinate-stored-file-list 'closest-files ls)))))
     (make-subordinate-stored-file-list 'closest-files ls)))
