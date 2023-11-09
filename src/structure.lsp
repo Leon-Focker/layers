@@ -29,7 +29,9 @@
     (unless (listp (data st))
       (error "data in make-structure must be a list: ~a" (data st)))
     (setf new-data (loop for ls in (data st) when (listp ls) collect ls))
-    (unless (car new-data)
+    (unless (and (car new-data)
+		 (loop for ls in new-data
+		       always (loop for i in ls always (numberp i))))
       (error "data in make-structure seems to be faulty: ~a" (data st)))
     (setf (data st)
 	  new-data
@@ -54,25 +56,25 @@
 
 ;; *** scale-smallest-value-to
 (defmethod scale-smallest-value-to ((st structure) new-smallest-value)
-  (let* ((data (data structure))
+  (let* ((data (data st))
 	 (minimum (apply #'min (first data)))
 	 (scaler (/ new-smallest-value minimum)))
-    (setf (data structure)
+    (setf (data st)
 	  (loop for ls in data collect
 	       (if (atom ls) (* ls scaler 1.0)
 		   (loop for i in ls collect (* i scaler)))))
-    structure))
+    st))
 
 ;; *** scale-biggest-value-to
 (defmethod scale-biggest-value-to ((st structure) new-biggest-value)
-  (let* ((data (data structure))
+  (let* ((data (data st))
 	 (maximum (apply #'max (first data)))
 	 (scaler (/ new-biggest-value maximum)))
-    (setf (data structure)
+    (setf (data st)
 	  (loop for ls in data collect
 	       (if (atom ls) (* ls scaler 1.0)
 		   (loop for i in ls collect (* i scaler)))))
-    structure))
+    st))
 
 ;; *** scale-structure
 ;;; loop through all lists in the data of a structure and scale the duration
@@ -86,6 +88,7 @@
 ;;; in case the *total-length* changed,
 ;;; this function will generate a new structure, based on the initial arguments
 (defmethod re-gen-structure ((st structure))
+  (print st)
   (when (depends-on-total-length st)
     (setf (data st)
 	  (case (type st)
@@ -105,7 +108,7 @@
   (make-instance 'structure
 		 :id id
 		 :data data
-		 :depends-on-total-length depends-on-total-length))
+		 :depends-on-total-length (when depends-on-total-length)))
 
 ;;; takes several arguments to generate a structure using the lindenmayer fun.
 ;;; total-length: length of the structure (and piece) in seconds.

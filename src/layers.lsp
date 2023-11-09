@@ -149,13 +149,16 @@
 	  (current-stored-file ly)
 	  (determine-new-stored-file ly))
     (when (< (remaining-duration ly) 0)
-      (warn "something is off, remaining-duration is negative: ~a" (remaining-duration ly)))
+      (warn "something is off, remaining-duration is negative: ~a"
+	    (remaining-duration ly)))
     ;; find new *next-trigger*, calling this function solves all my troubles,
     ;; idk why
     (next-trigger *layers* :trigger-all t)
-    ;; information what has happened:
+    ;; information as to what has happened:
     (format t "~&n for Layer ~a has been set to ~a" layer-id n)
-    (format t "~&SET TIMER TO: ~a ~a" (- *next-trigger* current-timer) reset-timer-flag)
+    (when *print-to-console*
+      (format t "~&SET TIMER TO: ~a ~a"
+	      (- *next-trigger* current-timer) reset-timer-flag))
     ;; finally tell PD what to do:
     (list 'set-n
 		 ;; time until next trigger
@@ -167,8 +170,7 @@
 		 ;; remaining time for currently played file
 		 (float (- new-next-trigger current-time))
 		 ;; new decay
-		 (float (see-next (list-of-durations ly))))
-      ))
+		 (float (see-next (list-of-durations ly))))))
 
 
 ;; old code, dirty :c , kept for now
