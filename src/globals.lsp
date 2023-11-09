@@ -5,7 +5,7 @@
 (in-package :layers)
 
 ;; *** custom setup (front end)
-(defparameter *total-length* 10)
+(defparameter *total-length* 100)
 (defparameter *seed* 5)
 ;; what is the maximum length for the smallest value in the structure?
 (defparameter *max-smallest-sample-length* 0.003)
@@ -18,9 +18,10 @@
 (defparameter *start-stop* t)
 (defparameter *pd-on-windows* t) ;; is your pd-version running on windows?
 (defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
-(defparameter *print-to-console* nil) 
+(defparameter *print-to-console* nil)
 
 ;; *** not for user (back end)
+(defparameter *all-layers* '()) ;; list with all layers objects that were called
 (defparameter *random-number* nil)
 (defparameter *next-trigger* 0) ;; time until next sample(s) will be triggered in ms
 (defparameter *default-sample-dir*
