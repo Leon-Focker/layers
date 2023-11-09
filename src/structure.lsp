@@ -53,7 +53,7 @@
 		 :current current))
 
 ;; *** scale-smallest-value-to
-(defun scale-smallest-value-to ((st structure) new-smallest-value)
+(defmethod scale-smallest-value-to ((st structure) new-smallest-value)
   (let* ((data (data structure))
 	 (minimum (apply #'min (first data)))
 	 (scaler (/ new-smallest-value minimum)))
