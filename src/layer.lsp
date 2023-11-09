@@ -4,9 +4,8 @@
 (in-package :layers)
 
 ;; *** layer
-;;; a layer with distinct soundfile and properties
-;;; one layer will send audio to one mixer channel
-;;; play slot is responsible to stop layer after structure ended
+;;; a layer with distinct soundfiles and properties
+;;; one layer will send audio information to one mixer channel
 (defclass layer (stored-file-list)
   ((stored-file-list :accessor stored-file-list
 		     :initarg :stored-file-list :initform nil)
@@ -24,6 +23,7 @@
 		      :initarg :n-for-list-of-durations :type integer)
    (list-of-durations :accessor list-of-durations :initarg :list-of-durations
 		      :initform nil)
+   ;; if nil, the layer will stop sending new information.
    (play :accessor play :initarg :play :initform t)
    (current-time :accessor current-time :initarg :current-time :initform 0)
    (panorama :accessor panorama :initarg :panorama :initform 45)
@@ -47,6 +47,12 @@
 ;;; create a layer-object
 (defun make-layer (id stored-file-list structure &optional (n 0) (panorama 45)
 						   (use-pan-of-layer t))
+  (unless (equal (type-of stored-file-list) 'stored-file-list)
+    (error "sfl in #'make-layer was not of type stored-file-list but: ~a"
+	   stored-file-list))
+  (unless (equal (type-of structure) 'structure)
+    (error "sfl in #'make-layer was not of type structure but: ~a"
+	   structure))
   (make-instance 'layer
 		 :id id
 		 :stored-file-list stored-file-list
@@ -66,28 +72,33 @@
 (defmethod get-id-last-file ((ly layer))
   (get-id (last-stored-file ly)))
 
-;; *** print-layer
+;; *** print-object
 ;;; print the layer object
-(defmethod print-layer ((ly layer))
-  (format t "~&Layer ID:          ~a ~
+(defmethod print-object ((ly layer) stream)
+  (format t "~%Layer ID:          ~a ~
              ~&current soundfile: ~a ~
-             ~&last soundfile:    ~a ~
              ~&duration:          ~a ~
-             ~&start:             ~a ~
-             ~&play:              ~a"
-          ;; ~&last in sfl:       ~a"
+             ~&start:             ~a"
 	  (id ly)
 	  (get-id-current-file ly)
-	  (get-id-last-file ly)
+	  ;;(get-id-last-file ly)
 	  (play-length ly)
 	  (start (current-stored-file ly))
-	  (play ly)
+	  ;;(play ly)
 	  ;; (get-id (last-played (stored-file-list ly)))
 	  ))
+
+;; *** print-layer
+;;; print the layer object - deprecated
+;;; (setf (symbol-function 'print-layer) #'print)
 
 ;; *** swap-stored-file-list
 ;;; swap the stored-file-list of a layer, even while playing
 (defmethod swap-stored-file-list ((ly layer) new-stored-file-list)
+  (unless (equal (type-of new-stored-file-list) 'stored-file-list)
+    (error "sfl in #'swap-stored-file-list was not of type stored-file-list ~
+            but: ~a"
+	   new-stored-file-list))
   ;; don't do anything when both sfls are the same
   (unless (eq (stored-file-list ly) new-stored-file-list)
     (setf (stored-file-list ly)
@@ -101,7 +112,7 @@
 	    (get-id new-stored-file-list))))
 
 ;; *** determine-new-stored-file
-;;; will be called in 'get-next' after possibly changing the sfl etc.
+;;; will be called in 'get-next', after possibly changing the sfl etc.
 ;;; determines next sound file in current-stored-file-list depending on either:
 ;;; - length-dependant-list
 ;;; - markov list with fixed-seed-randomness
@@ -182,6 +193,11 @@
 ;;; moves on to the next stored sound file
 (defmethod get-next ((ly layer))
   (unless ly (error "in get-next, the layer object is nil"))
+  (unless (equal (type-of (stored-file-list ly)) 'stored-file-list)
+    (error "get-next did not find a proper sfl in layer ~a: ~a"
+	   (id ly) (stored-file-list ly)))
+  (unless (data (stored-file-list ly))
+    (error "stored-file-list of layer ~a seems to be empty" (id ly)))
   (let ((next-len (see-next (list-of-durations ly))))
     (setf (last-stored-file ly)
 	  (current-stored-file ly)
@@ -265,7 +281,7 @@
 	  (get-id ly) (current (list-of-durations ly))))
 
 ;; *** play-this
-;;; sends list with all necessary information to pd, tsouo play
+;;; sends list with all necessary information to pd, so to play
 ;;; the current stored-file
 (defmethod play-this ((ly layer) &key
 				   (offset-start 0)
@@ -323,7 +339,7 @@
 			  (panorama (current-stored-file ly)))))
 	   ;; change sampler or use same as last?
 	   (if change-sampler 1 0))
-	(when printing (print-layer ly))
+	(when printing (print ly))
 	(when get-next (get-next ly)))
       (prog1
 	  (list
