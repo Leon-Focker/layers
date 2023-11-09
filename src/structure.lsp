@@ -125,6 +125,16 @@
 				 (type 'lindenmayer)
 				 (smallest *max-smallest-sample-length*)
 				 fixed-duration)
+  ;; sanity
+  (unless (listp seed) (error "malformed seed ~a, must be a list." seed))
+  (unless (when (listp rules)
+	    (loop for i in rules always (listp i)))
+    (error "malformed rules ~a, must be of type '((1 (2 1)) (2 (1 2)))"
+	   rules))
+  (unless (when (listp ratios)
+	    (loop for i in ratios always (listp i)))
+    (error "malformed ratios ~a, must be of type '((1 .2) (2 .6))"
+	   ratios))
   (make-instance 'fractal-structure
 		 :id (or id seed)
 		 :data (funcall type duration seed rules ratios smallest)

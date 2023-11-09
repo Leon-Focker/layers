@@ -35,7 +35,7 @@
 		    ;; firstly generate the result list,
 		    ;; replacing each element according to given rules
 		    (loop for element in res-ls collect
-			 (caadr (assoc element rules)))
+			 (flatten (cadr (assoc element rules))))
 		    ;; secondly generate the final list, by replacing
 		    ;; all elements with ratios and scaling them recursively
 		    (progn ; needed, since loop itself doesn't return res-ls
@@ -102,7 +102,7 @@
 		    ;; firstly generate the result list,
 		    ;; replacing each element according to given rules
 		    (loop for element in res-ls collect
-			 (caadr (assoc element rules)))
+			 (flatten (cadr (assoc element rules))))
 		    ;; secondly generate the final list, by replacing
 		    ;; all elements with ratios and scaling them recursively
 		    (progn ; needed, since loop itself doesn't return res-ls

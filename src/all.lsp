@@ -44,8 +44,6 @@
 
 ;;;; *total-length* should be called *total-duration*
 
-;;;; TODO: error cases for lindenmayer and compartmentalise
-
 (in-package :cl-user)
 
 ;; ** Dependencies
