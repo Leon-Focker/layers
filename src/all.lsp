@@ -42,6 +42,8 @@
 
 ;;;; usage without clm?
 
+;;;; *total-length* should be called *total-duration*
+
 ;;;; TODO: error cases for lindenmayer and compartmentalise
 
 (in-package :cl-user)
@@ -108,6 +110,7 @@
 		  "list-object.lsp"
 		  "markov.lsp"
 		  "length-dependant-list.lsp"
+		  "list-of-durations.lsp"
 		  "generate-structure.lsp"
 		  "structure.lsp"
 		  "stored-file.lsp"

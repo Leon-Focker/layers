@@ -50,7 +50,8 @@
   (unless (equal (type-of stored-file-list) 'stored-file-list)
     (error "sfl in #'make-layer was not of type stored-file-list but: ~a"
 	   stored-file-list))
-  (unless (equal (type-of structure) 'structure)
+  (check-sanity stored-file-list #'error)
+  (unless (subtypep (type-of structure) 'structure)
     (error "sfl in #'make-layer was not of type structure but: ~a"
 	   structure))
   (make-instance 'layer
@@ -65,7 +66,7 @@
 ;; *** get-id-current-file
 ;;; id of the current stored-file
 (defmethod get-id-current-file ((ly layer))
-  (get-id (current-stored-file ly)))
+  (when (current-stored-file ly) (get-id (current-stored-file ly))))
 
 ;; *** get-id-last-file
 ;;; id of the last stored-file
@@ -75,15 +76,15 @@
 ;; *** print-object
 ;;; print the layer object
 (defmethod print-object ((ly layer) stream)
-  (format t "~%Layer ID:          ~a ~
-             ~&current soundfile: ~a ~
-             ~&duration:          ~a ~
-             ~&start:             ~a"
+  (format stream "~%Layer ID:          ~a ~
+                  ~&current soundfile: ~a ~
+                  ~&duration:          ~a ~
+                  ~&start:             ~a"
 	  (id ly)
 	  (get-id-current-file ly)
 	  ;;(get-id-last-file ly)
 	  (play-length ly)
-	  (start (current-stored-file ly))
+	  (when (current-stored-file ly) (start (current-stored-file ly)))
 	  ;;(play ly)
 	  ;; (get-id (last-played (stored-file-list ly)))
 	  ))
@@ -196,6 +197,7 @@
   (unless (equal (type-of (stored-file-list ly)) 'stored-file-list)
     (error "get-next did not find a proper sfl in layer ~a: ~a"
 	   (id ly) (stored-file-list ly)))
+  (check-sanity (stored-file-list ly))
   (unless (data (stored-file-list ly))
     (error "stored-file-list of layer ~a seems to be empty" (id ly)))
   (let ((next-len (see-next (list-of-durations ly))))

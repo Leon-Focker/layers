@@ -190,7 +190,7 @@
 		      (let* ((sf (make-stored-file
 				  id
 				  file
-				  :markov '()
+				  ;;:markov '()
 				  :decay decay
 				  :start start
 				  :directory ""
@@ -284,7 +284,12 @@
 
 ;; *** check-sanity
 (defmethod check-sanity ((sfl stored-file-list) &optional (error-fun #'warn))
-  (loop for sf in (data sfl) do (check-sanity sf error-fun))
+  (unless
+      (loop for sf in (data sfl)
+	    always (and (equal (type-of sf) 'stored-file)
+			(check-sanity sf error-fun)))
+    (funcall error-fun "not all elements of sfl ~a are sane stored-files"
+	     (id sfl)))
   (loop for slot in '(length-min length-max) do
     (unless (and (numberp (funcall slot sfl)) (<= 0 (funcall slot sfl)))
       (funcall error-fun "werid ~a for stored-file ~a" slot (id sfl))))
@@ -295,7 +300,8 @@
   (loop for slot in '(last-played) do
     (unless (or (not (funcall slot sfl))
 		(equal (type-of (funcall slot sfl)) 'stored-file)
-      (funcall error-fun "werid ~a for stored-file ~a" slot (id sfl))))))
+		(funcall error-fun "werid ~a for stored-file ~a" slot (id sfl)))))
+  t)
 
 ;; *** store-in-text-file
 ;;; store a sfl in a text file, so the analysis can be skipped by reading in

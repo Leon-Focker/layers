@@ -1,55 +1,47 @@
 ;; ** structure
-;;;; stucture and list-of-durations class
+;;;; stucture and fractal-structure class
 
 (in-package :layers)
 
-;; *** structure
-;;; stores the structure as a list of durations and some information as to how
-;;; it was generated
+;; *** structure class and fractal-structure class
+;;; a list of lists of durations and some information about it - for example
+;;; how it was generated.
 (defclass structure (list-object)
+  ;; when this is t, re-generate the structure everytime the *total-length*
+  ;; is changed - for simple structures this means, that all sublists will
+  ;; be of length *total-length* after that.
+  ((depends-on-total-length :accessor depends-on-total-length
+			    :initarg :depends-on-total-length
+			    :initform nil)
+   (depth-of-structure :accessor depth-of-structure
+		       :initarg :depth-of-structure
+		       :type integer :initform 0)
+   (type :accessor type :initarg :type :initform 'simple)))
+
+(defclass fractal-structure (structure)
   ((seed :accessor seed :initarg :seed)
    (rules :accessor rules :initarg :rules)
    (ratios :accessor ratios :initarg :ratios)))
 
-;; *** make-structure
-;;; generate a structure-object
-;;; takes several arguments to generate a structure using the lindenmayer fun.
-;;; total-length: length of the structure (and piece) in seconds
-;;; the higher the n, the lower the recursion
-(defun make-structure (seed rules ratios
-		       &key id
-			    (duration *total-length*)
-		            (type 'lindenmayer)
-			 (smallest *max-smallest-sample-length*))
-  (make-instance 'structure
-		 :id id
-		 :data (funcall type duration seed rules ratios smallest)
-		 :seed seed
-		 :rules rules
-		 :ratios ratios))
+(defmethod initialize-instance :after ((st structure) &rest initargs)
+  (declare (ignore initargs))
+  (let* (new-data)
+    (unless (listp (data st))
+      (error "data in make-structure must be a list: ~a" (data st)))
+    (setf new-data (loop for ls in (data st) when (listp ls) collect ls))
+    (unless (car new-data)
+      (error "data in make-structure seems to be faulty: ~a" (data st)))
+    (setf (data st)
+	  new-data
+	  (depth-of-structure st)
+	  (length new-data))))
 
-;; *** re-gen-structure
-;;; in case the *total-length* changed,
-;;; this function will generate a new structure, based on the initial arguments
-(defmethod re-gen-structure ((st structure))
-  (setf (data st)
-	(lindenmayer *total-length* (seed st) (rules st) (ratios st))))
-
-;; example:
-#+nil(defparameter *structure*
-       (make-structure '(2)
-		       '((1 ((2 1)))
-			 (2 ((3 1 3)))
-			 (3 ((2))))
-		       '((1 1)
-			 (2 5)
-			 (3 .2))))
-
-;; *** list-of-durations
-;;; a structure is a list of list-of-durations, for the length list, we choose one
-;;; of those lists
-(defclass list-of-durations (list-object)
-  ((structure :accessor structure :initarg :structure :initform nil)))
+;; *** print-object
+(defmethod print-object ((st structure) stream)
+  (format stream "~%Structure ID:  ~a ~
+                  ~&depth:         ~a"
+	  (id st)
+	  (depth-of-structure st)))
 
 ;; *** make-list-of-durations
 ;;; initialize a list-of-durations object
@@ -60,18 +52,90 @@
 		 :structure st
 		 :current current))
 
-;; *** get-next-by-time
-;;; don't just get the next value in the list, use decider and the current time
-(defmethod get-next-by-time (current-time (ll list-of-durations))
-  (when (data ll)
-    (let* ((data (data ll)))
-      (progn
-	(setf (current ll)
-	      (decider (mod (/ current-time *total-length*) 1.0) data))
-	(when (= (current ll) (length data))
-	  (setf (current ll) 0))
-	;;(format t "~&index: ~a~&current: ~a" (current ll) current-time)
-	(nth (current ll) data)))))
+;; *** scale-smallest-value-to
+(defun scale-smallest-value-to ((st structure) new-smallest-value)
+  (let* ((data (data structure))
+	 (minimum (apply #'min (first data)))
+	 (scaler (/ new-smallest-value minimum)))
+    (setf (data structure)
+	  (loop for ls in data collect
+	       (if (atom ls) (* ls scaler 1.0)
+		   (loop for i in ls collect (* i scaler)))))
+    structure))
+
+;; *** scale-biggest-value-to
+(defmethod scale-biggest-value-to ((st structure) new-biggest-value)
+  (let* ((data (data structure))
+	 (maximum (apply #'max (first data)))
+	 (scaler (/ new-biggest-value maximum)))
+    (setf (data structure)
+	  (loop for ls in data collect
+	       (if (atom ls) (* ls scaler 1.0)
+		   (loop for i in ls collect (* i scaler)))))
+    structure))
+
+;; *** scale-structure
+;;; loop through all lists in the data of a structure and scale the duration
+;;; of each to the target-duration
+(defmethod scale-structure ((st structure) target-duration)
+  (setf (data st)
+	(loop for ls in (data st)
+	      collect (scale-list-to-sum ls target-duration))))
+
+;; *** re-gen-structure
+;;; in case the *total-length* changed,
+;;; this function will generate a new structure, based on the initial arguments
+(defmethod re-gen-structure ((st structure))
+  (when (depends-on-total-length st)
+    (setf (data st)
+	  (case (type st)
+	    (lindenmayer
+	     (lindenmayer *total-length* (seed st) (rules st) (ratios st)))
+	    (compartmentalise
+	     (compartmentalise *total-length* (seed st) (rules st) (ratios st)))
+	    (simple (scale-structure st *total-length*))
+	    (t (error "re-gen-structure does not know how to gen structure of~
+                       type ~a" (type st)))))
+    (format t "structure ~a was regenerated" (id st))))
+
+;; *** make-structure and make-fractal-structure
+
+;;; generate a structure-object
+(defun make-structure (id data &optional depends-on-total-length)
+  (make-instance 'structure
+		 :id id
+		 :data data
+		 :depends-on-total-length depends-on-total-length))
+
+;;; takes several arguments to generate a structure using the lindenmayer fun.
+;;; total-length: length of the structure (and piece) in seconds.
+;;; EXAMPLE
+#|
+(make-fractal-structure '(2)
+		'((1 ((2 1)))
+		  (2 ((3 1 3)))
+		  (3 ((2))))
+		'((1 1)
+		  (2 5)
+		  (3 .2)))
+|#
+(defun make-fractal-structure (seed rules ratios
+			       &key id
+				 (duration *total-length*)
+				 (type 'lindenmayer)
+				 (smallest *max-smallest-sample-length*)
+				 fixed-duration)
+  (make-instance 'fractal-structure
+		 :id (or id seed)
+		 :data (funcall type duration seed rules ratios smallest)
+		 :seed seed
+		 :type type
+		 :rules rules
+		 :ratios ratios
+		 :depends-on-total-length
+		 (unless fixed-duration
+		   (when (= duration *total-length*)
+		     t))))
 
 ;; *** visualize-structure
 ;;; use the imago library to visualize the structure.

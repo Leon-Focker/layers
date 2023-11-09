@@ -4,11 +4,11 @@
 
 (in-package :layers)
 
-;; *** scale-structure
+;; *** scale-nested-to
 ;;; scale all values in the recursive structure to wanted length.
 ;;; returns flattened list
-(defun scale-structure (struct target-sum)
-  (scale-list-to-sum (flatten struct) target-sum))
+(defun scale-nested-to (structure target-sum)
+  (scale-list-to-sum (flatten structure) target-sum))
 
 ;; *** lindenmayer
 ;;; generates a lindenmayer-like recursive list
@@ -76,7 +76,7 @@
 	 with break do	
 	   (setf (values result final)	; bind the two returned values
 		 (get-lists result final))
-	   (push (scale-structure final total-length) collector)
+	   (push (scale-nested-to final total-length) collector)
 	   (when (or (< (apply #'min (car collector))
 			(or smallest
 			    *max-smallest-sample-length*))
@@ -144,7 +144,7 @@
 	 with break do	
 	   (setf (values result final)	; bind the two returned values
 		 (get-lists result final))
-	   (push (scale-structure final total-length) collector)
+	   (push (scale-nested-to final total-length) collector)
 	   (when (or (< (apply #'min (car collector))
 			(or smallest
 			    *max-smallest-sample-length*))
@@ -158,45 +158,15 @@
     collector))
 
 ;;; example:
-#|(lindenmayer 60
+#|
+(lindenmayer 60
 	    '(2)
 	    '((1 ((2 1)))
 	      (2 ((3 1 3)))
 	      (3 ((2))))
 	    '((1 1)
 	      (2 5)
-(3 .2)))|#
-
-;; *** scale-smallest-value-to
-;;; intended to be used with structures generated using the same ratio for all
-;;; elements in the rule-set (never mind)
-;;; eg.: (lindenmayer 60
-;;;                   '(2)
-;;;                   '((1 ((2 3)))
-;;;	                (2 ((1 1 2 1)))
-;;;	                (3 ((1))))
-;;;	              '((1 1)
-;;;	                (2 1)
-;;;                     (3 1)))
-(defun scale-smallest-value-to (structure new-smallest-value)
-  (let* ((data (data structure))
-	 (minimum (apply #'min (first data)))
-	 (scaler (/ new-smallest-value minimum)))
-    (setf (data structure)
-	  (loop for ls in data collect
-	       (if (atom ls) (* ls scaler 1.0)
-		   (loop for i in ls collect (* i scaler)))))
-    structure))
-
-;; *** scale-biggest-value-to
-(defun scale-biggest-value-to (structure new-smallest-value)
-  (let* ((data (data structure))
-	 (maximum (apply #'max (first data)))
-	 (scaler (/ new-smallest-value maximum)))
-    (setf (data structure)
-	  (loop for ls in data collect
-	       (if (atom ls) (* ls scaler 1.0)
-		   (loop for i in ls collect (* i scaler)))))
-    structure))
+(3 .2)))
+|#
 
 ;;;; EOF generate-structure.lsp
