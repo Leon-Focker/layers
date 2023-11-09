@@ -85,6 +85,8 @@
 ;;; sets the global *total-length* variable to value in seconds
 (defun set-total-length (len)
   (setf *total-length* len)
+  (loop for ly in *all-layers*
+	do (re-gen-structure (structure ly)))
   (format t "~& *total-length* has been set to ~a" *total-length*))
 
 ;; *** set-print-to-console

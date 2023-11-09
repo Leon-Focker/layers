@@ -12,13 +12,12 @@
 (declaim (type layers *layers*))
 
 ;; *** make-layers
-;;; create a layers-object
+;;; create a layers-object and push it into *all-layers*
 (defun make-layers (id list-of-layers)
-  (make-instance 'layers
-		 :id id
-		 :data list-of-layers))
-
-(defparameter *layers* (make-layers nil nil))
+  (let ((ly (make-instance 'layers
+			   :id id
+			   :data list-of-layers)))
+    (pushnew ly *all-layers*)))
 
 ;; *** add-layer-to-layers
 ;;; add a layer-object to the piece (layers-object)
