@@ -16,7 +16,7 @@
     (let* ((data (data ll)))
       (progn
 	(setf (current ll)
-	      (decider (mod (/ current-time *total-length*) 1.0) data))
+	      (decider (mod (/ current-time *total-duration*) 1.0) data))
 	(when (= (current ll) (length data))
 	  (setf (current ll) 0))
 	;;(format t "~&index: ~a~&current: ~a" (current ll) current-time)

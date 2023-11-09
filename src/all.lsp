@@ -42,7 +42,7 @@
 
 ;;;; usage without clm?
 
-;;;; *total-length* should be called *total-duration*
+;;;; indispensibility for live - compare to higher n
 
 (in-package :cl-user)
 

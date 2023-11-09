@@ -39,7 +39,7 @@
 	   do (setf times (swap-nth index (+ (nth index times)
 					     (nth 3 sample))
 				    times))
-	     (when (>= min-val (* *total-length* 0.995)) (setf break t)))
+	     (when (>= min-val (* *total-duration* 0.995)) (setf break t)))
       (format t "~&getting calls for clm...")
       (when reset-layers (reset-layers layers)))))
 

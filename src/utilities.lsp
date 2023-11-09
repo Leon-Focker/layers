@@ -76,10 +76,17 @@
   (format t "~& *loop* has been set to ~a" *loop*))
 
 ;; *** set-seed-to
-;;; sets see to new value
+;;; sets seed to new value
 (defun set-seed-to (seed)
   (setf *seed* seed)
   (format t "~& *seed* has been set to ~a" *seed*))
+
+;; *** set-cloud-radius-to
+;;; sets *cloud-radius* to new value
+(defun set-cloud-radius-to (val)
+  (setf *cloud-radius* val)
+  (when *print-to-console*
+    (format t "~& *cloud-radius* has been set to ~a" *cloud-radius*)))
 
 ;; *** get-current-times
 ;;; get the current-time and timer values from pd
@@ -93,9 +100,9 @@
 	*current-timer* timer))
 
 ;; *** set-total-length
-;;; sets the global *total-length* variable to value in seconds
+;;; sets the global *total-duration* variable to value in seconds
 (defun set-total-length (len)
-  (setf *total-length* len)
+  (setf *total-duration* len)
   (let ((all-st '()))
     (loop for lys in *all-layers*
 	  do (loop for ly in (data lys)
@@ -110,7 +117,7 @@
   (setf *current-time* time
 	*current-timer* timer)
   (update-times *layers* time timer)
-  (format t "~& *total-length* has been set to ~a" *total-length*))
+  (format t "~& *total-duration* has been set to ~a" *total-duration*))
 
 ;; *** set-print-to-console
 ;;; sets the globals *print-to-console* variable
@@ -123,7 +130,7 @@
   (format t "~& *print-to-console* has been set to ~a" *print-to-console*))
 
 ;; *** set-use-sample-clouds
-;;; sets the global *total-length* variable to value in seconds
+;;; sets the global *total-duration* variable to value in seconds
 (defun set-use-sample-clouds (val)
   (cond ((= val 0) (setf *use-sample-clouds* nil))
 	((= val 1) (setf *use-sample-clouds* t))
@@ -133,10 +140,10 @@
   (format t "~& *use-sample-clouds* has been set to ~a" *use-sample-clouds*))
 
 ;; *** set-x-y-z
-;;; sets the global *total-length* variable to value in seconds
-(defun set-x-y-z (x y z &key (printing nil))
+;;; sets the global *total-duration* variable to value in seconds
+(defun set-x-y-z (x y z)
   (setf *x-y-z-position* (vector x y z))
-  (when printing
+  (when *print-to-console*
     (format t "~& *x-y-z-position* has been set to ~a" *x-y-z-position*)))
 
 ;; *** set-timer

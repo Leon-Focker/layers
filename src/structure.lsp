@@ -7,9 +7,9 @@
 ;;; a list of lists of durations and some information about it - for example
 ;;; how it was generated.
 (defclass structure (list-object)
-  ;; when this is t, re-generate the structure everytime the *total-length*
+  ;; when this is t, re-generate the structure everytime the *total-duration*
   ;; is changed - for simple structures this means, that all sublists will
-  ;; be of length *total-length* after that.
+  ;; be of length *total-duration* after that.
   ((depends-on-total-length :accessor depends-on-total-length
 			    :initarg :depends-on-total-length
 			    :initform nil)
@@ -85,7 +85,7 @@
 	      collect (scale-list-to-sum ls target-duration))))
 
 ;; *** re-gen-structure
-;;; in case the *total-length* changed,
+;;; in case the *total-duration* changed,
 ;;; this function will generate a new structure, based on the initial arguments
 (defmethod re-gen-structure ((st structure))
   (print st)
@@ -93,10 +93,10 @@
     (setf (data st)
 	  (case (type st)
 	    (lindenmayer
-	     (lindenmayer *total-length* (seed st) (rules st) (ratios st)))
+	     (lindenmayer *total-duration* (seed st) (rules st) (ratios st)))
 	    (compartmentalise
-	     (compartmentalise *total-length* (seed st) (rules st) (ratios st)))
-	    (simple (scale-structure st *total-length*))
+	     (compartmentalise *total-duration* (seed st) (rules st) (ratios st)))
+	    (simple (scale-structure st *total-duration*))
 	    (t (error "re-gen-structure does not know how to gen structure of~
                        type ~a" (type st)))))
     (format t "structure ~a was regenerated" (id st))))
@@ -124,7 +124,7 @@
 |#
 (defun make-fractal-structure (seed rules ratios
 			       &key id
-				 (duration *total-length*)
+				 (duration *total-duration*)
 				 (type 'lindenmayer)
 				 (smallest *max-smallest-sample-length*)
 				 fixed-duration)
@@ -147,7 +147,7 @@
 		 :ratios ratios
 		 :depends-on-total-length
 		 (unless fixed-duration
-		   (when (= duration *total-length*)
+		   (when (= duration *total-duration*)
 		     t))))
 
 ;; *** visualize-structure

@@ -1,4 +1,4 @@
-#N canvas 247 285 864 594 12;
+#N canvas 56 211 864 594 12;
 #X msg 191 384 192.168.56.101;
 #X obj 191 408 s ip;
 #X obj 302 408 s port;
@@ -269,7 +269,7 @@
 #X connect 15 0 12 0;
 #X restore 14 329 pd mixer-and-out;
 #X msg 719 81 (list 'print "test 123");
-#N canvas 866 358 663 423 to-sc 0;
+#N canvas 703 364 663 423 to-sc 0;
 #X obj 401 212 outlet;
 #X obj 24 111 r seed;
 #X msg 24 137 (set-seed-to \$1);
@@ -363,6 +363,8 @@
 #X obj 24 360 r print-to-console;
 #X msg 24 386 (set-print-to-console \$1);
 #X obj 287 61 r to-sc;
+#X obj 237 365 r cloud-radius;
+#X msg 237 389 (set-cloud-radius-to \$1);
 #X connect 1 0 2 0;
 #X connect 2 0 0 0;
 #X connect 3 0 0 0;
@@ -393,6 +395,8 @@
 #X connect 25 0 26 0;
 #X connect 26 0 0 0;
 #X connect 27 0 0 0;
+#X connect 28 0 29 0;
+#X connect 29 0 0 0;
 #X restore 304 52 pd to-sc;
 #N canvas 832 304 872 528 timer 0;
 #X obj 50 59 r start;
@@ -603,6 +607,8 @@
 #X obj 521 13 cnv 15 10 10 empty empty use-clouds 20 12 0 14 #404040
 #fcfcfc 0;
 #X msg 170 27 50;
+#X obj 502 71 hsl 128 15 0 1 0 0 cloud-radius empty empty -2 -8 0 10
+#fcfcfc #000000 #000000 0 1;
 #X connect 0 0 1 0;
 #X connect 3 0 2 0;
 #X connect 5 0 0 0;

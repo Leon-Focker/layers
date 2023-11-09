@@ -46,11 +46,12 @@
 ;; *** make-layer
 ;;; create a layer-object
 (defun make-layer (id stored-file-list structure &optional (n 0) (panorama 45)
-						   (use-pan-of-layer t))
+						   (use-pan-of-layer t)
+						   (error-fun #'warn))
   (unless (equal (type-of stored-file-list) 'stored-file-list)
     (error "sfl in #'make-layer was not of type stored-file-list but: ~a"
 	   stored-file-list))
-  (check-sanity stored-file-list #'error)
+  (check-sanity stored-file-list error-fun)
   (unless (subtypep (type-of structure) 'structure)
     (error "sfl in #'make-layer was not of type structure but: ~a"
 	   structure))
@@ -146,7 +147,8 @@
 	   (cond (*use-sample-clouds*
 		(decide-for-snd-file
 		 (get-sub-list-of-closest (stored-file-list ly)
-					  *x-y-z-position*)
+					  *x-y-z-position*
+					  :max-distance *cloud-radius*)
 		 (get-next *random-number*)))
 	       ((length-dependant-list (current-stored-file ly))
 		(decide-for-snd-file
@@ -197,7 +199,7 @@
   (unless (equal (type-of (stored-file-list ly)) 'stored-file-list)
     (error "get-next did not find a proper sfl in layer ~a: ~a"
 	   (id ly) (stored-file-list ly)))
-  (check-sanity (stored-file-list ly))
+  ;;(check-sanity (stored-file-list ly))
   (unless (data (stored-file-list ly))
     (error "stored-file-list of layer ~a seems to be empty" (id ly)))
   (let ((next-len (see-next (list-of-durations ly))))
