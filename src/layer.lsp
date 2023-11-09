@@ -258,10 +258,49 @@
      (determine-new-stored-file ly)
      )))
 
-;; *** update-layer
+;; *** update-times
+;;; after chanigng a structure, similar to set-n, the timings for the next
+;;; trigger etc might have shiftet. This updates those times.
+(defmethod update-times ((ly layer) current-time current-timer)
+  (let* ((lod (data (list-of-durations ly)))
+	 (len (length lod))
+	 ;; look for next trigger time and sum
+	 (new-next-trigger
+	   (loop for n from 0 and i = (nth (mod n len) lod)
+		 sum i into sum
+		 until (> sum current-time)
+		 finally (return sum)))
+	 (passed-timer (- *next-trigger* current-timer)))
+    (setf (current-time ly)
+	  new-next-trigger
+	  ;; set this-length according to current position in list
+	  (this-length ly)
+	  (see-current (list-of-durations ly))
+	  (remaining-duration ly)
+	  ;; time between last and next general trigger
+	  (+ passed-timer		       ;last-trigger until now
+	     (- new-next-trigger current-time))) ;now until end of sample
+    ;; warn when negative remainder
+    (when (< (remaining-duration ly) 0)
+      (warn "something is off, remaining-duration for ~a is negative: ~a"
+	    (id ly) (remaining-duration ly)))
+    (when *print-to-console* (format t "~&updated for layer ~a" (id ly)))
+    (list 'update
+	  ;; time until next trigger
+	  (float (- *next-trigger* current-timer))
+	  ;; reset-timer in pd?
+	  0
+	  ;; layer ID
+	  (id ly)
+	  ;; remaining time for currently played file
+	  (float (- new-next-trigger current-time))
+	  ;; new decay 
+	  (float (see-next (list-of-durations ly))))))
+
+;; *** reset
 ;;; updates the slots of a layer, when needed
-;;; should maybe be called reset-layer?!
-(defmethod update-layer ((ly layer))
+;;; could be named #'reset...
+(defmethod reset-layer ((ly layer))
   (setf (current-stored-file ly)
 	(first (data (stored-file-list ly)))
 	(last-stored-file ly)

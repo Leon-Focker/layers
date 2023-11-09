@@ -30,5 +30,7 @@
 (defparameter *score-file* nil) ;; set which file to reload to reset
 (defparameter *layers-buffer* '()) ;; variable used to temporarily store data
 (defparameter *debug* '()) ;; hopefully not needed for now
+(defparameter *current-time* 0)
+(defparameter *current-timer* 0)
 
 ;;;; EOF globals.lsp

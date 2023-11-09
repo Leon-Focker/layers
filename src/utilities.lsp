@@ -81,6 +81,17 @@
   (setf *seed* seed)
   (format t "~& *seed* has been set to ~a" *seed*))
 
+;; *** get-current-times
+;;; get the current-time and timer values from pd
+(defun get-current-times ()
+  (list 'TIMES 1))
+
+;; *** set-current-times
+;;; a way for pd to send the times
+(defun set-current-times (time timer)
+  (setf *current-time* time
+	*current-timer* timer))
+
 ;; *** set-total-length
 ;;; sets the global *total-length* variable to value in seconds
 (defun set-total-length (len)
@@ -90,6 +101,15 @@
 	  do (loop for ly in (data lys)
 		   do (pushnew (structure ly) all-st)))
     (loop for st in all-st do (re-gen-structure st)))
+  ;; ask pd for current time:
+  (list 'TIME-U 1))
+
+;; *** set-current-times-for-update
+;;; send time and then use them for the update
+(defun set-current-times-for-update (time timer)
+  (setf *current-time* time
+	*current-timer* timer)
+  (update-times *layers* time timer)
   (format t "~& *total-length* has been set to ~a" *total-length*))
 
 ;; *** set-print-to-console
