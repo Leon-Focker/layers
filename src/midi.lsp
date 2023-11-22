@@ -152,6 +152,15 @@
 
 (setf (symbol-function 'midi-to-list) #'midi-file-to-list)
 
+
+;; *** find-notes-with-cursor
+;;; return all notes (lists with (start key duration...),
+;;; that play during the time of cursor.
+(defun find-notes-with-cursor (cursor list-of-notes)
+  (loop for note in list-of-notes
+	when (<= (first note) cursor (+ (first note) (nth 2 note)))
+	  collect note))
+
 ;; *** harmony-filter
 ;;; takes a midi file, which will then be filtered by a second midi file.
 ;;; you can define the probability of a note being changed and the detection
@@ -162,7 +171,7 @@
 ;;; TODO fixed seed please!;;; 
 (defun harmony-filter (midi-file midi-filter probability detection-range
 		       &key track1 track2
-			 (name (format nil "~afiltered_file.mid" fu::*futils-load-dir*))
+			 (file (format nil "~afiltered_file.mid" *src-dir*))
 			 (seed 1))
   (let* ((file1 (midi-file-to-list midi-file track1))
 	 (file2 (midi-file-to-list midi-filter track2))
@@ -184,8 +193,8 @@
 	  for start = (nth 0 note)
 	  for keyname = (nth 1 note)
 	  with last-start2 = 0
-	  for prob = (fu::envelope-interp (/ start duration) probability-env)
-	  for detection = (fu::envelope-interp (/ start duration) detection-range-env)
+	  for prob = (interpolate (/ start duration) probability-env)
+	  for detection = (interpolate (/ start duration) detection-range-env)
 	  ;; collect all notes in file2 that areplayed at notes start time
 	  do (loop for i from 0 and note2 in (subseq file2 last-start2)
 		   for start2 = (first note2)
@@ -195,25 +204,25 @@
 		      (when (> end2 start)
 			(push note2 harmony))
 		   finally (incf last-start2 i))
-	     (setf harmony (remove start harmony :test (lambda (x y) (>= x (nth 5 y)))))
+	     (setf harmony (remove start harmony
+				   :test (lambda (x y) (>= x (nth 5 y)))))
 	     ;; decide wheter note is changed, then collect
-	     ;; collect
 	     (push (if (and harmony
 			    (< (get-next ran-nb) prob))
 		       ;; select closest pitch from harmony
 		       (let* ((harm (loop for i in harmony collect (nth 1 i)))
-			      (intervals (mapcar (lambda (x) (abs (- x keyname))) harm))
+			      (intervals (mapcar (lambda (x) (abs (- x keyname)))
+						 harm))
 			      (min (apply #'min intervals))
-			      (closest (nth 1 (nth (position min intervals) harmony))))
+			      (closest (nth 1 (nth (position min intervals)
+						   harmony))))
 			 ;; if closest is in range, change
 			 (if (<= min detection)
 			     (replace note (list closest) :start1 1)
 			     note))
 		       ;; use original pitch
 		       note)
-		   result)
-	    ;; (format t "~&prob: ~a" prob)
-	  )
+		   result))
     ;; sort for time (for cm), then write into midi
     (setf result
 	  (sort result #'(lambda (x y) (< (first x) (first y))))
@@ -228,7 +237,71 @@
 				    (nth 4 note))))
     (cm::events
      (cm::new cm::seq :name (gensym) :time 0.0 :subobjects events)
-     name
+     file
      :tempo 60)))
+
+;; *** deconstruct-chords
+;;; Takes a midi file as input, which should consist of chords or some kind of
+;;; polyphonie. This function then deconstructs that file, using the
+;;; rhythmic-pattern.
+;;; file - midi file with chords to deconstruct
+;;; rhythmic-pattern - list of durations als rhythms, ie. '(2 1 (2)). Durations
+;;;  in parens are rests.
+;;; longest-duration - if any duration in the final file would be longer that
+;;;   this, it will be replaced with a nested version of the pattern.
+;;;   (see #'nested-pattern)
+;;; density-env - an envelope with x and y values from 0 to 1. 0 Meaning only
+;;;   one note will be chose, 1 meaning, all notes will be chosen.
+;;; stay-on-note - when true, try to use notes that appeared in the last chord.
+;;; TODO: chosing the pitches is a bit trivial and might need a way to vary it.
+(defun deconstruct-chords
+    (midi-file rhythmic-pattern longest-duration density-env stay-on-note
+     &key midi-track)
+  (let* ((chords (midi-file-to-list midi-file midi-track))
+	 first-note
+	 last-note
+	 (duration 1)
+	 (new-notes '()))
+    ;; sort and set first and last note
+    (setf chords (sort chords #'(lambda (x y) (< (car x) (car y))))
+	  first-note (first chords)
+	  last-note (car (last chords))
+	  duration (- (+ (car last-note) (nth 2 last-note)) (car first-note))
+	  rhythmic-pattern (scale-pattern rhythmic-pattern duration)
+	  rhythmic-pattern (nested-pattern rhythmic-pattern longest-duration))
+    
+    ;; divide chords into the rhythmic pattern and look which notes are available
+    (flet ((pred (last)
+	     "This sorts items to the front, if they are found in 'last' "
+	     (lambda (x y) (or (find x last)
+			  (and (not (find x last)) (not (find y last))))))
+	   (density-aux (d len) (1+ (round (* (max (min d 1) 0) (1- len))))))
+      (loop for rhythm in rhythmic-pattern
+	    with time = (car first-note)
+	    for duration = (if (listp rhythm) (car rhythm) rhythm)
+	    for i from 0
+	    for notes = (find-notes-with-cursor time chords)
+	    for how-many-pitches = (density-aux (interpolate
+						 (/ i (length rhythmic-pattern))
+						 density-env)
+						(length notes))
+	    do (when (and notes (atom rhythm))
+		 ;; sort notes for priorities:
+		 (setf notes (sort notes (pred (third (first new-notes)))))
+		 (when stay-on-note (setf notes (reverse notes)))
+		 ;; collect notes
+		 (push `(,time ,duration ,(loop repeat how-many-pitches
+						collect (second (pop notes))))
+		       new-notes))
+	       (setf time (+ time duration))
+	    finally (setf new-notes (reverse new-notes))))
+    ;; write to midi fil
+    (lists-to-midi (loop for i in new-notes collect (nth 2 i))
+		   (loop for i in new-notes collect (second i))
+		   (loop for i in new-notes collect (first i))
+		   :file (format nil "~a~a~a"
+				 (directory-namestring midi-file)
+				 (pathname-name midi-file)
+				 "-deconstructed.mid"))))
 
 ;; EOF midi.lsp

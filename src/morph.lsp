@@ -1,10 +1,10 @@
-;; * morph.lsp
+;; ** morph.lsp
 ;;; home of morph-patterns and interpolate-patterns - two ways of transitioning
 ;;; from one pattern (any kind of list with numbers) to another
 
 (in-package :ly)
 
-;; ** patterns-to-rhythms-list
+;; *** patterns-to-rhythms-list
 ;;; list of style '((1 1 (1) 1 1 (1)) ((1) 1 1 (1) 1))
 ;;; to '((1 1 1 1 1 1) (1 1 1 1 1))
 ;;; could this be easier with sc::flatten?
@@ -20,7 +20,35 @@
 		    rhythm
 		    (error "pattern holds weird value: ~a" rhythm))))))
 
-;; ** mod1
+;; *** scale-pattern
+;; (scale-pattern '(1 1 1 (1) 1 1) 5) => (5/6 5/6 5/6 (5/6) 5/6 5/6)
+(defun scale-pattern (pattern new-duration)
+  (let* ((old-duration (loop for i in (flatten pattern) sum i))
+	 (factor (/ new-duration old-duration)))
+    (loop for i in pattern
+	  collect (if (atom i) (* i factor) `(,(* (car i) factor))))))
+
+;; *** nested-pattern
+;;; if a pattern contains values that are greater than 'longest', they will be
+;;; replaced with a version of the pattern, whose elements sum to the original
+;;; value.
+(defun nested-pattern-aux (rhythms longest pattern &optional carry-rests)
+  (let (flag)
+    (setf rhythms
+	  (loop for d in rhythms
+		for val = (if (atom d) d (car d))
+		unless (> val longest) collect d
+		  when (> val longest)
+		    append (progn (setf flag t)
+				  (if (and (listp d) carry-rests)
+				      `(,(scale-pattern pattern val))
+				      (scale-pattern pattern val)))))
+    (if flag (deconstruct-aux rhythms longest pattern) rhythms)))
+
+(defun nested-pattern (pattern longest &optional carry-rests)
+  (nested-pattern-aux pattern longest pattern carry-rests))
+
+;; *** mod1
 ;;; (mod x 1), but return 1 if (and (= 0 (mod x 1)) (not (= 0 x)))
 (defun mod1 (x)
   (let ((x (rational x)))
@@ -29,7 +57,7 @@
 	  (t (mod x 1)))))
 (export 'mod1 :ly)
 
-;; ** envelope-interp
+;; *** envelope-interp
 ;;; slippery chicken provides #'interpolate. Is there a difference?
 ;;; copied from the common lisp music package
 (defun envelope-interp (x fn &optional (base 1)) ;order of args is like NTH
@@ -55,7 +83,7 @@
 			1.0)))))))
 	(t (envelope-interp x (cddr fn) base))))	;go on looking for x segment
 
-;; ** morph-patterns
+;; *** morph-patterns
 ;;; morph between two patterns, using a morphing-function,
 ;;; eg. fibonacci-transition. This morphing-function will determine which
 ;;; pattern to choose the next element from. The numerical values in patterns
@@ -167,7 +195,7 @@
        ;; return the final rhythm sequence:
 	 (return ls))))
 
-;; ** interpolate-patterns
+;; *** interpolate-patterns
 ;;; interpolate the numerical values in one pattern until it matches the next
 ;;; pattern. The patterns do not have to have the same length.
 ;;; patterns - list of sublists containing durations - see morph-patterns
@@ -201,7 +229,7 @@
 			    transition-envelopes
 			    nil length))
 
-;; ** interpolate-envelopes
+;; *** interpolate-envelopes
 ;;; similar to interpolate-patterns but takes list of envelopes. These are then
 ;;; split into the x-values and y-values, which are then interpolated
 ;;; separately. Then envelopes are formed again.
