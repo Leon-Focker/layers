@@ -44,6 +44,8 @@
 
 ;;;; indispensibility for live - compare to higher n
 
+;;;; tests for midi.lsp, check if some already are in utils?
+
 (in-package :cl-user)
 
 ;; ** Dependencies

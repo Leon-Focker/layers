@@ -9,13 +9,22 @@
 ;;; Has a lot less features than slippery chickens event-list-to-midi-file, but
 ;;; in return it's a lot easier and skipps the generation of an event, which
 ;;; might be favorable in some cases.
+;;; pitch-list - A list of either sc-pitches or midi-key-numbers. Can also be a
+;;;  list of chords, ie. lists of pitches.
+
+(defmacro lists-to-midi-aux (pitch)
+  ``(,(if (numberp ,pitch) ,pitch (note-to-midi ,pitch))
+    ,(nth (mod i start-len) start-time-list)
+    ,(nth (mod i velo-len) velo)
+    ,(nth (mod i duration-len) duration-list)))
+
 (defun lists-to-midi (pitch-list duration-list start-time-list
-			  &key
-			    velocity-list
-			    (tempo 60)
-			    (channel 0)
-			    (file (format nil "~a~a" *src-dir*
-					  "midi-output.mid")))
+		      &key
+			velocity-list
+			(tempo 60)
+			(channel 0)
+			(file (format nil "~a~a" *src-dir*
+				      "midi-output.mid")))
   (when (or (null pitch-list) (null duration-list))
     (error "please provide at least one value in the pitch and the duration ~
             lists in lists-to-midi"))
@@ -27,22 +36,25 @@
 	 (velo (or velocity-list '(0.7)))
 	 (velo-len (length velo))
 	 (total (apply #'max `(,pitch-len ,duration-len ,start-len ,velo-len)))
-	 (events (sort
-		  (loop for i below total collect
-		       `(,(let ((pitch (nth (mod i pitch-len) pitch-list)))
-			    (if (numberp pitch) pitch (note-to-midi pitch)))
-			  ,(nth (mod i start-len) start-time-list)
-			  ,(nth (mod i velo-len) velo)
-			  ,(nth (mod i duration-len) duration-list)))
-		  #'(lambda (x y) (< (second x) (second y))))))
-    (setf events (loop for event in events appending
-		      (cm::output-midi-note
-		       (pop event)
-		       0
-		       (pop event)
-		       (pop event)
-		       (pop event)
-		       channel)))
+	 (events '()))
+    (setf events
+	  (sort (loop for i below total
+		      for pitch = (nth (mod i pitch-len) pitch-list)
+		      collect (lists-to-midi-aux
+			       (if (listp pitch) (car pitch) pitch))
+		      when (listp pitch)
+			append (loop for p in (cdr pitch)
+				     collect (lists-to-midi-aux p)))
+		#'(lambda (x y) (< (second x) (second y))))
+	  events (loop for event in events
+		       appending
+		       (cm::output-midi-note
+			(pop event)
+			0
+			(pop event)
+			(pop event)
+			(pop event)
+			channel)))
     (cm::events
      (cm::new cm::seq :name (gensym) :time 0.0 :subobjects events)
      file
@@ -174,7 +186,7 @@
 	  with last-start2 = 0
 	  for prob = (fu::envelope-interp (/ start duration) probability-env)
 	  for detection = (fu::envelope-interp (/ start duration) detection-range-env)
-	  ;; collect all notes in file2 that are played at notes start time
+	  ;; collect all notes in file2 that areplayed at notes start time
 	  do (loop for i from 0 and note2 in (subseq file2 last-start2)
 		   for start2 = (first note2)
 		   for end2 = (nth 5 note2)
