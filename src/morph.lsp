@@ -43,7 +43,7 @@
 				  (if (and (listp d) carry-rests)
 				      `(,(scale-pattern pattern val))
 				      (scale-pattern pattern val)))))
-    (if flag (deconstruct-aux rhythms longest pattern) rhythms)))
+    (if flag (nested-pattern-aux rhythms longest pattern) rhythms)))
 
 (defun nested-pattern (pattern longest &optional carry-rests)
   (nested-pattern-aux pattern longest pattern carry-rests))
