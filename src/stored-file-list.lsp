@@ -26,7 +26,8 @@
 		 :length-min length-min
 		 :length-max length-max
 		 :sfl-when-shorter sfl-when-shorter
-		 :sfl-when-longer sfl-when-longer))
+	         :sfl-when-longer sfl-when-longer
+		 :last-played (first data)))
 
 ;; *** subordinate-stored-file-list
 ;;; only contains a list of stored-files and its probability weight

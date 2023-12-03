@@ -23,6 +23,12 @@
 		      :initarg :n-for-list-of-durations :type integer)
    (list-of-durations :accessor list-of-durations :initarg :list-of-durations
 		      :initform nil)
+   ;; alternative way to determine new rhythm:
+   (use-rhythm-function :accessor use-rhythm-function
+			:initarg :use-rhythm-function :initform nil)
+   ;; the only argument when called is always the layer-object itself.
+   (rhythm-function :accessor rhythm-function :initarg :rhythm-function
+		    :initform #'(lambda (ly) (declare (ignore ly)) 1))
    ;; if nil, the layer will stop sending new information.
    (play :accessor play :initarg :play :initform t)
    (current-time :accessor current-time :initarg :current-time :initform 0)
@@ -36,31 +42,44 @@
   (declare (ignore initargs))
   (setf (current-stored-file ly) (first (data (stored-file-list ly)))
 	(last-stored-file ly) (current-stored-file ly)
+	(list-of-durations ly)
+	(if (use-rhythm-function ly)
+	    (make-instance 'list-of-durations
+			   :data (list (funcall (rhythm-function ly) ly))
+			   :current 0)
+	    (make-list-of-durations (structure ly)(n-for-list-of-durations ly)))
+	(this-length ly)
+	(see-current (list-of-durations ly))
 	(play-length ly)
 	(this-length ly)
 	(remaining-duration ly)
-	(this-length ly)
-	(list-of-durations ly)
-	(make-list-of-durations (structure ly) (n-for-list-of-durations ly))))
+	(this-length ly)))
 
 ;; *** make-layer
 ;;; create a layer-object
 (defun make-layer (id stored-file-list structure &optional (n 0) (panorama 45)
 						   (use-pan-of-layer t)
-						   (error-fun #'warn))
+						   (error-fun #'warn)
+						   (rhythm-function
+						    #'(lambda (ly)
+							(declare (ignore ly))
+							1))
+						   use-rhythm-function)
   (unless (equal (type-of stored-file-list) 'stored-file-list)
     (error "sfl in #'make-layer was not of type stored-file-list but: ~a"
 	   stored-file-list))
   (check-sanity stored-file-list error-fun)
   (unless (subtypep (type-of structure) 'structure)
-    (error "sfl in #'make-layer was not of type structure but: ~a"
-	   structure))
+    (warn "sfl in #'make-layer was not of type structure: ~a, ~
+           using rhythm-funtion instead." structure)
+    (setf structure nil use-rhythm-function 1))
   (make-instance 'layer
 		 :id id
 		 :stored-file-list stored-file-list
 		 :structure structure
 		 :n-for-list-of-durations n
-		 :this-length (first (nth n (data structure)))
+		 :rhythm-function rhythm-function
+		 :use-rhythm-function use-rhythm-function
 		 :panorama panorama
 		 :use-pan-of-layer use-pan-of-layer))
 
@@ -202,13 +221,20 @@
   ;;(check-sanity (stored-file-list ly))
   (unless (data (stored-file-list ly))
     (error "stored-file-list of layer ~a seems to be empty" (id ly)))
-  (let ((next-len (see-next (list-of-durations ly))))
+  ;; get next duration:
+  (let ((next-len 1))
     (setf (last-stored-file ly)
 	  (current-stored-file ly)
 	  (current-time ly)
-	  (+ (current-time ly) (this-length ly)))
+	  (+ (current-time ly) (this-length ly))
+	  next-len
+	  (if (use-rhythm-function ly)
+	      (progn (add-to-list (list-of-durations ly)
+				  (funcall (rhythm-function ly) ly))
+		     (see-current (list-of-durations ly)))
+	      (get-next-by-time (current-time ly) (list-of-durations ly))))
     ;; change sample-bank (sfl) of current layer depending on the
-    ;; length of the next played soundfile (see-next)
+    ;; length of the next played soundfile -> next-len
     (cond ((< next-len (length-min (stored-file-list ly)))
 	   (swap-stored-file-list
 	    ly
@@ -233,24 +259,30 @@
     (when (eq 'rest (get-id (current-stored-file ly)))
       (setf-markov (current-stored-file ly)
 		   ;; if the last played is also a rest, use second file in list
-		   (if (data (markov-list (last-played (stored-file-list ly))))
-		       (markov-list (last-played (stored-file-list ly)))
-		       (markov-list (second (data (stored-file-list ly)))))))
+		   (cond ((data
+			   (markov-list (last-played (stored-file-list ly))))
+			  (markov-list (last-played (stored-file-list ly))))
+			 (t (loop for i in (data (stored-file-list ly))
+				  when (markov-list i)
+				    do (return (markov-list i)))))))
     ;; error, if current file still has no markov-list
     (unless (data (markov-list (current-stored-file ly)))
       (error "~&No markov-list found in current-stored-file ~a in Layer~a"
 	     (get-id (current-stored-file ly)) (get-id ly)))
     ;; make the playback stop when the structure has ended (and *loop* is nil)
     (let ((ll (list-of-durations ly)))
-      (when (and (= (current ll) (1- (length (data ll)))) (not *loop*))
+      (when (and (= (current ll) (1- (length (data ll))))
+		 (not *loop*)
+		 (not (use-rhythm-function ly)))
 	(setf (play ly) nil)))
     ;; set time for the next sample and then actually determine the new sample
     (setf
      ;; sample-lengths
      (last-length ly)
      (this-length ly)
+     ;; using pop, instead of #'get-next when using the rhythm-function
      (this-length ly)
-     (get-next-by-time (current-time ly) (list-of-durations ly))
+     (if (use-rhythm-function ly) (pop (data (list-of-durations ly))) next-len)
      (play-length ly)
      (this-length ly)
      (remaining-duration ly)
@@ -332,6 +364,8 @@
 				   (output-for-unix nil)
 				   (change-sampler t)
 				   (get-next t))
+  (unless (data (stored-file-list ly))
+    (error "stored-file-list of layer ~a seems to be empty" (id ly)))
   (if (and (or *loop* (play ly)) *start-stop*)
       (prog1
 	  (list

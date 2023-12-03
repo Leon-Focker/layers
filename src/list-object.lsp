@@ -13,7 +13,7 @@
 (defmethod get-ids ((lo list-object))
   (loop for element in (data lo) collect (id element)))
 
-;; *** get-current
+;; *** see-current
 ;;; get current element of list
 (defmethod see-current ((lo list-object))
   (when (data lo)
@@ -40,6 +40,11 @@
 	     (when (= n (length (data lo)))
 	       (setf n 0))
 	     (nth n data)))))
+
+;; *** add-to-list
+(defmethod add-to-list ((lo list-object) &rest elements)
+  (setf (data lo)
+	(append (data lo) elements)))
 
 ;; *** see-with-relative-index
 ;;; get an element from the list with index (+ current relative)

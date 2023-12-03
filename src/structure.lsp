@@ -45,15 +45,6 @@
 	  (id st)
 	  (depth-of-structure st)))
 
-;; *** make-list-of-durations
-;;; initialize a list-of-durations object
-
-(defmethod make-list-of-durations ((st structure) &optional (n 0) (current 0))
-  (make-instance 'list-of-durations
-		 :data (nth n (data st))
-		 :structure st
-		 :current current))
-
 ;; *** scale-smallest-value-to
 (defmethod scale-smallest-value-to ((st structure) new-smallest-value)
   (let* ((data (data st))
