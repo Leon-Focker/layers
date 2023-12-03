@@ -40,6 +40,14 @@
 (defun ly-test-next-test (last-test)
   (nth (1+ (position last-test *ly-test-all-tests*)) *ly-test-all-tests*)) 
 
+;; ** base-object.lsp
+
+(ly-deftest base-object ()
+  (let ((bo (make-instance 'base-object :data '(0 1 2 3 4) :id 'testsuite)))
+    (sc-test-check
+	(equal (get-id bo) 'testsuite)
+	(equal (data bo) '(0 1 2 3 4)))))
+
 ;; ** utilities.lsp
 
 (ly-deftest utils ()
