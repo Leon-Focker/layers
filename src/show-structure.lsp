@@ -45,7 +45,7 @@
 
 (defmethod visualize-structure ((st structure) &optional file (size-factor 1))
   (format t "~&visualizing structure: ~a" (id st))
-  (imago::show-structure (reverse (cdr (reverse (data st)))) file size-factor))
+  (imago::show-structure (reverse (reverse (data st))) file size-factor))
 
 #|
 (ql:quickload :sketch)
