@@ -148,6 +148,6 @@
 ;; export some symbols that are not exported because they are already in sc etc.
 (loop for sym in '(data duration) do (export sym))
 
-(format t "~&finished loading!")
+(format t "~&finished loading layers!")
 
 ;;;; EOF all.lsp
