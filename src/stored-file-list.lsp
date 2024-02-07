@@ -15,6 +15,9 @@
 		    :initform nil)
    (last-played :accessor last-played :initarg :last-played :initform nil)))
 
+(defmethod print-object ((sfl stored-file-list) stream)
+  (format stream "<STORED-FILE-LIST ~a>" (id sfl)))
+
 ;; *** make-stored-file-list
 ;;; make an instance of stored-file-list
 (defun make-stored-file-list (id data &key

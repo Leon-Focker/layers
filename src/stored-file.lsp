@@ -51,6 +51,9 @@
    (y :accessor y :initarg :y :initform 0.5 :reader y)
    (z :accessor z :initarg :z :initform 0.5 :reader z)))
 
+(defmethod print-object ((sf stored-file) stream)
+  (format stream "<STORED-FILE ~a>" (id sf)))
+
 ;; *** setf-markov
 ;;; sets the markov list of a stored-file
 (defmethod setf-markov ((sf stored-file) new-markov-list)
