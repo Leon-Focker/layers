@@ -198,6 +198,17 @@
     (append (subseq ls effective-index)
             (subseq ls 0 effective-index))))
 
+;; *** push-key-value
+;;; push a key-value pair to a (p)list.
+(defmacro push-key-value (key value place)
+  `(progn (push ,value ,place)
+	  (push ,key ,place)))
+
+;; *** push-key-value
+;;; set key to value in (p)list.
+(defmacro setf-key-value (plist key value)
+  `(setf (getf ,plist ,key) ,value))
+
 ;; *** re-order
 ;;; take a list and a new-order as input. The latter should be a list of
 ;;; indices, which will then be used to re-order the first list. If the 
