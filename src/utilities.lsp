@@ -455,16 +455,14 @@
 (defun rqq-to-indispensability-function (rqq &optional step-function?)
   (let* ((dur-list (mapcar #'(lambda (x) (/ 1 x))
 			   (mapcar #'parse-rhythm-symbol
-				   (remove 'sc::{
-					   (remove 'sc::}
-						   (remove '- (rqq-divide rqq)))))))
+				   (car (parse-rhythms (rqq-divide rqq) .35)))))
 	 (sum  (loop for i in dur-list sum i))
 	 (indis (rqq-to-indispensability rqq))
 	 (env '()))
     (setf dur-list (mapcar #'(lambda (x) (/ x sum)) dur-list))
     (setf env (loop for dur in (append dur-list '(0))
-		 and y in (append indis (first (list indis))) 
-		 collect x collect y sum dur into x))
+		    and y in (append indis (first (list indis))) 
+		    collect x collect y sum dur into x))
     (if step-function?
 	(lambda (x) (nth (decider (mod x 1) dur-list) indis))
 	(lambda (x) (envelope-interp (mod x 1) env)))))
