@@ -46,6 +46,8 @@
 
 ;;;; tests for midi.lsp, check if some already are in utils?
 
+;;;; Look at sc::import-audio
+
 (in-package :cl-user)
 
 ;; ** Dependencies

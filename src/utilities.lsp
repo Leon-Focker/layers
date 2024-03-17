@@ -453,9 +453,7 @@
 ;;;
 ;;; RETURNS a function, whose input should be a number
 (defun rqq-to-indispensability-function (rqq &optional step-function?)
-  (let* ((dur-list (mapcar #'(lambda (x) (/ 1 x))
-			   (mapcar #'parse-rhythm-symbol
-				   (car (parse-rhythms (rqq-divide rqq) .35)))))
+  (let* ((dur-list (rqq-to-durations rqq))
 	 (sum  (loop for i in dur-list sum i))
 	 (indis (rqq-to-indispensability rqq))
 	 (env '()))
@@ -466,6 +464,11 @@
     (if step-function?
 	(lambda (x) (nth (decider (mod x 1) dur-list) indis))
 	(lambda (x) (envelope-interp (mod x 1) env)))))
+
+(defun rqq-to-durations (rqq)
+  (mapcar #'(lambda (x) (/ 1 x))
+	  (mapcar #'parse-rhythm-symbol
+		  (car (parse-rhythms (rqq-divide rqq) .35)))))
 
 (defun indispensability-enumerate (ls)
   (let* ((fls (flatten ls))
