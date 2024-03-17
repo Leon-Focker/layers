@@ -32,7 +32,7 @@
 	      (setf element (nth index sublist))
 	      (setf color (make-color (floor (* (expt (- 1 (/ element 1)) 15) 255))
 				      (floor (* (/ n length) 100))
-				      (floor (* (/ n length) 100))))
+				      (floor (* (/ index sublength) 100)))) ;(/ n length)
 	      (setf (aref array y x) color)
 	      ))
     (write-png

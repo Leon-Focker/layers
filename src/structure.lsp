@@ -40,7 +40,7 @@
 
 ;; *** print-object
 (defmethod print-object ((st structure) stream)
-  (format stream "~%Structure ID:  ~a ~
+  (format stream "~&Structure ID:  ~a ~
                   ~&depth:         ~a"
 	  (id st)
 	  (depth-of-structure st)))
@@ -129,6 +129,9 @@
 	    (loop for i in ratios always (listp i)))
     (error "malformed ratios ~a, must be of type '((1 .2) (2 .6))"
 	   ratios))
+  (unless (= (length rules) (length ratios))
+    (error "malformed rules and ratios, should be the same length not ~a and ~a"
+	   (length rules) (length ratios)))
   (make-instance 'fractal-structure
 		 :id (or id seed)
 		 :data (funcall type duration seed rules ratios smallest)
