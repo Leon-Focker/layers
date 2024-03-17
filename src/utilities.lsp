@@ -614,6 +614,14 @@
      when (> (if abs? (abs el) el) max) do (setf max el max-i i)
      finally (return `(,max ,max-i))))
 
+;; *** multiply-arrays
+;;; copied from Common Lisp Music - for some reason they got rid of this...
+(defun multiply-arrays (rdat window)
+  (let ((len (min (length rdat) (length window))))
+    (loop for i from 0 below len do
+      (setf (aref rdat i) (* (aref rdat i) (aref window i))))
+    rdat))
+
 ;; *** get-spectral-centroid
 ;;; calulate the spectral centroid out of a list of frequency-magnitude pairs
 ;;; eq.: '((440 0.5) (630 0.46) (880 0.25))

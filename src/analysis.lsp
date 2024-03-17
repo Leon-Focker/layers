@@ -45,7 +45,7 @@
 					    (+ start-sample fft-size)))
 				   (t (error "fft-from-file: file is of a weird~
                                                   type: ~a" (type-of file)))))))
-		(multiply-arrays frame (make-fft-window window fft-size))))
+		(ly::multiply-arrays frame (make-fft-window window fft-size))))
 	 (fdi (make-double-array fft-size))
 	 (magnitudes '())
 	 (phases '()))
