@@ -572,6 +572,26 @@
 ;; alias
 (setf (symbol-function 'function-to-env) #'make-function-into-env)
 
+;; *** combine-envelopes
+;;; take a list of envelopes and a list of durations and combine all
+;;; envelopes into one.
+#|
+(combine-envelopes '((0 0  1 1) (0 3  5 3)) '(5 5))
+=> '(0.0 0 5.0 1 5.0001 3  10.0 3)
+|#
+(defun combine-envelopes (list-of-envelopes list-of-durations)
+  (unless (= (length list-of-envelopes) (length list-of-durations))
+    (error "list-of-envelopes and list-of-durations should be the same length: ~
+            ~&~a ~a"  list-of-envelopes list-of-durations))
+  (let* ((starts (cons 0 (loop for i in list-of-durations sum i into sum
+			       collect sum))))
+    (setf list-of-envelopes
+	  (loop for s in starts and e in (cdr starts)
+		and env in list-of-envelopes and i from 0
+		do (when (> i 0) (setf s (+ s .0001)))
+		collect (scale-env env 1 :first-x s :last-x e)))
+    (flatten list-of-envelopes)))    
+
 ;; *** flatness-of-list
 ;;; this might not be useful at all for anything but spectra (spectral flatnes)
 (defun flatness-of-list (ls)

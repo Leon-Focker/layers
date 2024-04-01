@@ -6,7 +6,8 @@
 
 ;;; because I don't want to test all of slippery chicken every time but still
 ;;; use it's testing capabilities, I'm doing the bare minimum here to make a
-;;; unique testing suite for layers.
+;;; unique testing suite for layers. this should be replaced with the asdf
+;;; testing facilities.
 
 (in-package :ly)
 
@@ -183,5 +184,10 @@
 	       (0 1/2 13421773/67108864 43/12 5/3 2/3)
 	       (0 3/4 13421773/67108864 23/6 7/6 11/12)))
       )))
+
+(ly-deftest test-combine-envelopes ()
+  (sc-test-check
+   (equal (combine-envelopes '((0 0  1 1) (0 3  5 3)) '(5 5))
+	  '(0.0 0 5.0 1 5.0001 3  10.0 3))))
 
 ;; EOF layers-test-suite.lsp
