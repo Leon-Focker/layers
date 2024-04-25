@@ -14,15 +14,16 @@
 
 (defmacro lists-to-midi-aux (pitch)
   ``(,(if (numberp ,pitch) ,pitch (note-to-midi ,pitch))
-    ,(nth (mod i start-len) start-time-list)
-    ,(nth (mod i velo-len) velo)
-    ,(nth (mod i duration-len) duration-list)))
+     ,(nth (mod i start-len) start-time-list)
+     ,(nth (mod i velo-len) velo)
+     ,(nth (mod i duration-len) duration-list)
+     ,(nth (mod i chan-len) channel)))
 
 (defun lists-to-midi (pitch-list duration-list start-time-list
 		      &key
 			velocity-list
 			(tempo 60)
-			(channel 0)
+			(channel '(0))
 			(file (format nil "~a~a" *src-dir*
 				      "midi-output.mid")))
   (when (or (null pitch-list) (null duration-list))
@@ -30,11 +31,13 @@
             lists in lists-to-midi"))
   (unless start-time-list (setf start-time-list
 				(get-start-times duration-list)))
+  (setf channel (force-list channel))
   (let* ((pitch-len (length pitch-list))
 	 (duration-len (length duration-list))
 	 (start-len (length start-time-list))
 	 (velo (or velocity-list '(0.7)))
 	 (velo-len (length velo))
+	 (chan-len (length channel))
 	 (total (apply #'max `(,pitch-len ,duration-len ,start-len ,velo-len)))
 	 (events '()))
     (setf events
@@ -54,7 +57,7 @@
 			(pop event)
 			(pop event)
 			(pop event)
-			channel)))
+			(pop event))))
     (cm::events
      (cm::new cm::seq :name (gensym) :time 0.0 :subobjects events)
      file
