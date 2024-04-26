@@ -48,6 +48,10 @@
 ;;;  the final list.
 ;;;  Below 1 -> more of the higher levels: 0.5 => (0 0 1 1 1 1)
 ;;;  Above 1 -> more of the lower levels:  2   => (0 0 0 0 0 1)
+#|
+(kernel-transitions 20 3 '(-3 2 4))
+=> (1 1 1 1 0 1 1 2 2 2 2 0 2 0 0 0 0 0 1 2)
+|#
 (defun kernel-transitions (total-items levels &optional (kernel '(0)) (e 1))
   ;; make sure that all arguments are valid:
   (unless (and (numberp total-items) (numberp e) (listp kernel))
@@ -106,6 +110,12 @@
 ;;;  instead of the linear/exponential standard function. Thus 'e will be ignored.
 ;;;  the function must return a list!
 ;;;  for example 'fibonacci-transitions or 'procession.
+#|
+EXAMPLE
+(window-transitions 20 3)
+=> (0 0 0 0 0 0 0 1 1 1 0 1 0 1 2 2 2 0 2 1)
+=> #(10 6 4)
+|#
 (defun window-transitions (total-items levels &optional (e 1) (window-size 0.5)
 						control-function)
   ;; make sure that all arguments are valid:
