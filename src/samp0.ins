@@ -58,7 +58,7 @@
                             ;; are usually > 0.0 <= 1.0.  amp is used as a
                             ;; scaler for this envelope. 
    (degree 45)              ;; Stereo Panning:  0 = left, 45 = middle, 90 =
-                            ;; right.
+                            ;; right (when out-channels = nil). 
    (distance 0)             ;; A distance effect.  This is used to create a
                             ;; combination of direct and reverberated signal.
                             ;; Try values between 0 (no effect) and 100.
@@ -66,6 +66,7 @@
    (rev-amt 0)              ;; Reverberation.  0.1 quite a lot. This value is 
    ;; a scaler for rev-env
    (channel 0)              ;; which channel of the input file will be sampled
+   out-channels             ;; how many channels the output file should have.
    (printing t))            ;; Whether the number of seconds processed should
                             ;; be printed to the lisp listener whilst running.
 
@@ -112,8 +113,8 @@
          ;; The actual output duration we'll use (seconds).
          (dur (if duration duration dur-full))
          ;; The Sound Location Unit Generator
-         (loc (make-locsig :degree degree :distance distance :reverb
-                           rev-amt)) 
+         (loc (make-locsig :degree degree :distance distance :reverb rev-amt
+			   :channels out-channels))
          ;; The SRC envelope
          (senv (make-env :envelope srt-env :scaler srt-scaler :offset 0.0 
                          :duration dur))
@@ -170,7 +171,6 @@ To comment out bigger blocks of text/code put it between #| and |#
 
 with-sound examples for samp1:
 
-
 
 ;;; Simply play the whole input file unchanged and accept default CLM and
 ;;; instrument state  

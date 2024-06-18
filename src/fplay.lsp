@@ -144,7 +144,7 @@
 	  (duration nil) (reflect nil) (reverse nil) (start 0) (end 0) (srt 1)
 	  (width 5) (srt-env '(0 0 100 0)) (srt-scaler 1.0) (amp 1.0)
 	  (amp-env '(0 1 100 1)) (degree 45) (distance 0) (rev-env '(0 1 100 1))
-	  (rev-amt 0) (channel 0) (printing nil))
+	  (rev-amt 0) (channel 0) (out-channels nil) (printing nil))
 	all-vars)
        ;; get all neccessary variables:
        (append
@@ -183,6 +183,7 @@
 		       :rev-env ,(name-var-highest 'rev-env i all-vars)
 		       :rev-amt ,(name-var-highest 'rev-amt i all-vars)
 		       :channel ,(name-var-highest 'channel i all-vars)
+		       :out-channels ,(name-var-highest 'out-channels i all-vars)
 		       :printing nil
 		       )))))
 	;; printing:
@@ -255,6 +256,9 @@
 ;;;  duration - how long the sample will be played. This is passed to samp1 as
 ;;;   the :duration key-argument. Initially defined as nil - the sample will
 ;;;   be played entirely.
+;;; out-channels - how many channels the soundfile will have. If not specified
+;;;  this will be 2. For more than two channels locsig assumes them to be 
+;;;  arranged in an equally spaced circle.
 ;;;
 ;;; For exemplary uses see https://github.com/Leon-Focker/feedback
 (defmacro fplay (start-time end-time &rest rest)

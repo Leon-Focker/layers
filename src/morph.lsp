@@ -103,7 +103,7 @@
 ;;; length - when nil, generate a list with duration, when a number, generate
 ;;;  a list with this length.
 ;;; collect-indices - if nil, everything happens as normal. If t, don't collect
-;;;  the rhythm value but a listwith two values - the first being the index of
+;;;  the rhythm value but a list with two values - the first being the index of
 ;;;  the pattern in patterns and the second being the index of the rhythm value
 ;;;  in the pattern. This way, you could morph a second set of patterns
 ;;;  according to the original set of patterns. For example the first set of

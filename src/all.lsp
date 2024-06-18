@@ -48,6 +48,8 @@
 
 ;;;; Look at sc::import-audio
 
+;;;; CLM file->array etc. could replace some instruments??
+
 (in-package :cl-user)
 
 ;; ** Dependencies
