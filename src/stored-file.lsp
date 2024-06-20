@@ -203,33 +203,34 @@
 (defmethod check-sanity ((sf stored-file) &optional (error-fun #'warn))
   (loop for slot in '(path) do
     (unless (stringp (funcall slot sf))
-      (funcall error-fun "werid ~a for stored-file ~a: ~a"
+      (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	       slot (id sf) (funcall slot sf))))
   (loop for slot in '(duration total-samples samplerate start amplitude
 		      peak decay centroid spread flatness dominant-frequency
 		      smoothness transient)
 	do
-	   (unless (or (not (funcall slot sf)) (numberp (funcall slot sf)))
-	     (funcall error-fun "werid ~a for stored-file ~a: ~a"
+	   (unless (or (not (funcall slot sf)) (numberp (funcall slot sf))
+		       (equal (funcall slot sf) 'random))
+	     (funcall error-fun "weird ~a for stored-file ~a: ~a"
 		      slot (id sf) (funcall slot sf))))
   (loop for slot in '(x y z) do
     (unless (and (numberp (funcall slot sf)) (<= 0 (funcall slot sf) 1))
-      (funcall error-fun "werid ~a for stored-file ~a: ~a"
+      (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	       slot (id sf) (funcall slot sf))))
   (unless (or (not (markov-list sf))
 	      (equal (type-of (markov-list sf)) 'markov-list))
-    (funcall error-fun "werid ~a for stored-file ~a: ~a"
+    (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	     'markov-list (id sf) (markov-list sf)))
   (unless (or (not (LENGTH-DEPENDANT-LIST sf))
 	      (equal (type-of (LENGTH-DEPENDANT-LIST sf))
 		     'LENGTH-DEPENDANT-LIST))
-    (funcall error-fun "werid ~a for stored-file ~a: ~a"
+    (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	     'LENGTH-DEPENDANT-LIST (id sf) (LENGTH-DEPENDANT-LIST sf)))
   (unless (or (not (peak-index sf)) (integerp (peak-index sf)))
-    (funcall error-fun "werid ~a for stored-file ~a: ~a"
+    (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	     'peak-index (id sf) (peak-index sf)))
   (unless (and (numberp (panorama sf)) (<= 0 (panorama sf) 90))
-    (funcall error-fun "werid ~a for stored-file ~a: ~a"
+    (funcall error-fun "weird ~a for stored-file ~a: ~a"
 	     'panorama (id sf) (panorama sf)))
   t)
 
