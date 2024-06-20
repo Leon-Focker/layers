@@ -17,7 +17,7 @@
 ;;; make structure:
 
 (defparameter *structure*
-  (make-structure '(2)
+  (make-fractal-structure '(2)
 		  '((1 ((2 2)))
 		    (2 ((1 1))))
 		  '((1 1)
