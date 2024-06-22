@@ -213,7 +213,7 @@
 			      ,(name-var-highest 'rhythm i all-vars))))))))
 
 ;; *** fplay
-;;; A very handy Macro to call samp1 instrument for use in clm
+;;; A very handy Macro to call samp0 instrument for use in clm
 ;;; start-time - the initial value for 'time (see below)
 ;;; end-time - when 'time is > end-time, the loop stops.
 ;;; REST: All following arguments should be of type list and will create lexical
@@ -223,14 +223,14 @@
 ;;;  created. For example: (rhythm 2 1) would create rhythm and define it as 2
 ;;;  and also rhythm2 and define it as 1. The variables can have any name, but
 ;;;  some names already have a meaning within fplay. fplay will create n calls
-;;;  to samp1, where n is the maximum length of definitions for a variable. So
+;;;  to samp0, where n is the maximum length of definitions for a variable. So
 ;;;  if you define 'rhythm as (rhythm 2 1 (nth (mod i 2) '(3 4))), at least
-;;;  three different calls to samp1 are generated. If some variables have less
+;;;  three different calls to samp0 are generated. If some variables have less
 ;;;  definitions than others, the last one will be used.
 ;;;  The following variables are always created internally by fplay and can also
 ;;;  be used within the variables the user defines. 'Time and 'condition can
 ;;;  also be altered.
-;;;  time - this is given to samp1 as time argument and will be increased by
+;;;  time - this is given to samp0 as time argument and will be increased by
 ;;;   'rhythm at the end of each iteration. 'time usually starts at 'start-time.
 ;;;  condition - while this is t, the loop keeps going.
 ;;;   Usually is (<= time end-time)
@@ -241,19 +241,19 @@
 ;;;  These variable-names have a predefined meaning within fplay but cannot be
 ;;;  used within the definition of user-defined variables unless they are
 ;;;  previously defined by the user:
-;;;  file - this is given to samp1 as its file argument and should be a path
+;;;  file - this is given to samp0 as its file argument and should be a path
 ;;;   pointing to a soundfile. Its initial definition is (path sound)
 ;;;  sound - this is a variable designed to hold a stored-file (see :layers).
 ;;;   Initially defined as (first (data sfl)).
 ;;;  sfl - a stored-file-list (see :layers). This can be thought of as the
 ;;;   'sample-library' that is used. But can also be totally ignored.
-;;;  rhythm - the time between this call to samp1 and the next one. 'Time
+;;;  rhythm - the time between this call to samp0 and the next one. 'Time
 ;;;   will be increased by 'rhythm at the end of each iteration. However
 ;;;   this is not neccessarily how lond the sample will be played.
 ;;;  printing - when t, print sound, duration and time for isntrument call.
-;;;  If you want to access one of samp1's key-argument you can do so by
+;;;  If you want to access one of samp0's key-argument you can do so by
 ;;;  creating a variable with the same name. For example:
-;;;  duration - how long the sample will be played. This is passed to samp1 as
+;;;  duration - how long the sample will be played. This is passed to samp0 as
 ;;;   the :duration key-argument. Initially defined as nil - the sample will
 ;;;   be played entirely.
 ;;; out-channels - how many channels the soundfile will have. If not specified
