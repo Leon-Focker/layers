@@ -140,7 +140,7 @@
 	all-vars)
        ;; add all other variables that are not set through arg-list
        (merge-var-lists
-	'((sfl nil) (sound nil) (rhythm 1000)
+	`((sfl nil) (sound nil) (rhythm (1+ ,,end-time))
 	  (duration nil) (reflect nil) (reverse nil) (start 0) (end 0) (srt 1)
 	  (width 5) (srt-env '(0 0 100 0)) (srt-scaler 1.0) (amp 1.0)
 	  (amp-env '(0 1 100 1)) (degree 45) (distance 0) (rev-env '(0 1 100 1))
@@ -249,7 +249,8 @@
 ;;;   'sample-library' that is used. But can also be totally ignored.
 ;;;  rhythm - the time between this call to samp0 and the next one. 'Time
 ;;;   will be increased by 'rhythm at the end of each iteration. However
-;;;   this is not neccessarily how lond the sample will be played.
+;;;   this is not neccessarily how long the sample will be played.
+;;;   If this is not provided, the sample should only play once.
 ;;;  printing - when t, print sound, duration and time for isntrument call.
 ;;;  If you want to access one of samp0's key-argument you can do so by
 ;;;  creating a variable with the same name. For example:
