@@ -190,6 +190,11 @@
     (cdr list)
     (cons (car list) (remove-nth (1- n) (cdr list)))))
 
+;; *** nth-mod
+;;; nth element from a list but if n > (length list), loop contents of list.
+(defun nth-mod (n ls)
+  (nth (mod n (length ls)) ls))
+
 ;; *** rotate
 ;;; rotate a list so that it starts with the specified index.
 (defun rotate (ls &optional (new-start-index 1))
