@@ -262,8 +262,8 @@
 ;;;  arranged in an equally spaced circle.
 ;;;
 ;;; For exemplary uses see https://github.com/Leon-Focker/feedback
-(defmacro fplay (start-time end-time &rest rest)
+(defmacro fplay (start-time end-time &body body)
   `(progn (unless (and (numberp ,start-time) (numberp ,end-time))
 	    (error "start-time and end-time must be numbers in fplay: ~a, ~a"
 		   ,start-time ,end-time))
-	  (loop for i from 0 ,@(fplay-get-loop-vars start-time end-time rest))))
+	  (loop for i from 0 ,@(fplay-get-loop-vars start-time end-time body))))

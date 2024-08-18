@@ -123,8 +123,9 @@
 					   (morphing-function
 					    (sc::fibonacci-transition 20)))
   ;; sanity checks
-  (unless (typep patterns 'list)
-    (error "morph-patterns needs patterns to be a list: ~a" patterns))
+  (unless (and (typep patterns 'list) (> (length patterns) 1))
+    (error "morph-patterns needs patterns to be a list of at least two patterns: ~&~a"
+	   patterns))
   (unless (or (not length) (numberp length))
     (error "length in morph-patterns should either be nil or a number: ~&~a"
 	   length))

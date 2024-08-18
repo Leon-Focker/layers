@@ -209,7 +209,7 @@
   `(progn (push ,value ,place)
 	  (push ,key ,place)))
 
-;; *** push-key-value
+;; *** setf-key-value
 ;;; set key to value in (p)list.
 (defmacro setf-key-value (plist key value)
   `(setf (getf ,plist ,key) ,value))
@@ -433,9 +433,9 @@
 
 
 ;; *** rqq-to-indispensability and rqq-to-indispensability-function
-;;; This is baiscally a really flexible and complicated version of
+;;; This is basically a really flexible and complicated version of
 ;;; get-beat-prox, inspired by Clarence Barlows rhythm theory of
-;;; indispensibility and Marc Evans implementation of it.
+;;; indispensibility and Marc Evansteins implementation of it.
 ;;; Instead of repeatedly splitting a bar into halfs, as get-beat-prox does
 ;;; it, you can specify any division of a bar by using rqq notation.
 ;;; Also, every beat (or division) has a unique weight.
@@ -507,6 +507,8 @@
 		    (incf k)))))
     new-ls))
 
+;; *** rqq-to-indispensability
+;;; 
 (defun rqq-to-indispensability (rqq)
   (labels ((iter (ls)
 		 (let* ((len (length ls))
@@ -524,6 +526,38 @@
 					 i)))))
 		   (indispensability-enumerate ls))))
     (iter (second rqq))))
+
+;; *** apply-indispensability
+;;; returns the amplitude values for a list of rhythms according to an
+;;; indispensability function:
+;;; beats: a list of durations. These durations are kind of like bars,
+;;;  in that the indispensability-function is applied to each of these durations
+;;;  if there is more rhythms than bars to be filled they are ignored.
+;;; rhythms: a list of durations, for which we want to get a list of
+;;;  amplitude-values. If there are more bars to be filled than available
+;;;  rhythms, they are ignored.
+;;; indispensability-function: a function that returns an amplitude value
+;;;  for an input value (x) between 0 and 1.
+;;;  See #'rqq-to-indispensability-function.
+;;; returns a list of numbers.
+(defun apply-indispensability (beats rhythms indispensability-function)
+  (let* ((duration (apply #'+ beats)))
+    (loop for rthm in rhythms
+	  for sum = 0 then (+ sum rthm)
+	  until (>= sum duration)
+	  with beat-sum = 0
+	  with last-beat-i = 0
+	  for progress = (rationalize (/ sum duration))
+	  for current-beat-i = (decider progress beats)
+	  for current-beat = (nth current-beat-i beats)
+	  with position = 0
+	  do (unless (= current-beat-i last-beat-i)
+	       (incf beat-sum (nth last-beat-i beats))
+	       (setf last-beat-i current-beat-i))
+	     ;; position in current beat:
+	     (setf position (- sum beat-sum))
+	  collect (funcall indispensability-function
+			   (rationalize (/ position current-beat))))))
 
 ;; *** list-interp
 ;;; looks at a list as a series of y values, spaced equally from 0 to max-x

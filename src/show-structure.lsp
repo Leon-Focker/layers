@@ -43,7 +43,7 @@
 
 (in-package :layers)
 
-(defmethod visualize-structure ((st structure) &optional file (size-factor 1))
+(defmethod visualize-structure ((st structure) &optional file (size-factor 1/2))
   (format t "~&visualizing structure: ~a" (id st))
   (imago::show-structure (reverse (reverse (data st))) file size-factor))
 
