@@ -84,7 +84,7 @@
 	(t (envelope-interp x (cddr fn) base))))	;go on looking for x segment
 
 ;; *** morph-patterns
-;;; morph between two patterns, using a morphing-function,
+;;; morph between two (or more) patterns, using a morphing-function,
 ;;; eg. fibonacci-transition. This morphing-function will determine which
 ;;; pattern to choose the next element from. The numerical values in patterns
 ;;; are not changed, but the patterns are mixed.

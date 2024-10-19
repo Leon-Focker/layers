@@ -45,7 +45,7 @@
 (defun start-osc (&optional ip port)
   (when ip (unless (vectorp ip)
 	     (error "ip must be a vector of form #(192 168 56 1) but is: ~a" ip)))
-  (osc-call :send-ip (or ip #(192 168 56 1)) :listen-port (or port 5000) :send-port (or port 5000)))
+  (osc-call :send-ip (or ip #(192 168 178 20)) :listen-port (or port 5000) :send-port (or port 5000)))
 
 ;; *** layers-has-been-loaded
 ;;; function with no features whatsoever, other files can check wheter this one
@@ -322,7 +322,7 @@
   (loop for i in ls with last unless (if within-tolerance?
 					 (equal-within-tolerance last i 1.0d-5)
 					 (equal last i))
-     collect i do (setf last i)))
+	collect i do (setf last i)))
 
 ;; *** insert
 ;;; insert an element into list at index

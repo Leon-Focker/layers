@@ -140,18 +140,20 @@
 ;;; than need be, so this function just reads the file without making events
 ;;; !!! notice, that currently there is no tempo argument - so be careful,
 ;;; that the imported file is already in the right tempo
+;;; Also with longer midi files there seems to be some minor timing errors that
+;;; build up? Probably stems from the cm::import-events funktion
 (defun midi-file-to-list (file &optional track)
   (let* ((cm-midi (cm::parse-midi-file file track)))
     (remove nil
 	    (loop for m in cm-midi
-	       collect (typecase m
-			 (cm::midi (list (cm::object-time m)
-					 (cm::midi-keynum m)
-					 (cm::midi-duration m)
-					 (cm::midi-amplitude m)
-					 (cm::midi-channel m)
-					 (+ (cm::object-time m)
-					    (cm::midi-duration m)))))))))
+		  collect (typecase m
+			    (cm::midi (list (cm::object-time m)
+					    (cm::midi-keynum m)
+					    (cm::midi-duration m)
+					    (cm::midi-amplitude m)
+					    (cm::midi-channel m)
+					    (+ (cm::object-time m)
+					       (cm::midi-duration m)))))))))
 
 (setf (symbol-function 'midi-to-list) #'midi-file-to-list)
 
