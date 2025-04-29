@@ -50,6 +50,8 @@
 
 ;;;; CLM file->array etc. could replace some instruments??
 
+;;;; Export with clm still uses samp1
+
 (in-package :cl-user)
 
 ;; ** Dependencies
@@ -101,9 +103,23 @@
     (load (compile-file (format nil "~a~a" *layers-src-dir* "analysis.lsp")))
     ;; Michael Edwards samp1 instrument, but you can select the input channel:
     ;; It would also be possible to use samp5 (slippery chicken).
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "Samp0.ins")))))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "Samp0.ins")))
+    ;; nrev from CLM
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "nrev.ins")))
+    ;; jc-reverb from CLM
+    ;;(load (compile-file (format nil "~a~a" *layers-src-dir* "jcrevf.ins")))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "jcrev.ins")))))
 
-(import '(clm::samp0))
+(import '(clm::with-sound
+	  clm::with-mix
+	  clm::sound-let
+	  clm::mix
+	  clm::*CLM-MIX-CALLS*
+	  clm::*CLM-MIX-OPTIONS*
+	  clm::add-soundq
+	  clm::samp0
+	  clm::nrev
+	  clm::jc-reverb))
 
 ;;; load all .lsp files
 (defun load-all ()
