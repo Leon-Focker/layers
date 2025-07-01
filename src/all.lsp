@@ -103,7 +103,7 @@
     (load (compile-file (format nil "~a~a" *layers-src-dir* "analysis.lsp")))
     ;; Michael Edwards samp1 instrument, but you can select the input channel:
     ;; It would also be possible to use samp5 (slippery chicken).
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "Samp0.ins")))
+    (load (compile-file (format nil "~a~a" *layers-src-dir* "samp0.ins")))
     ;; nrev from CLM
     (load (compile-file (format nil "~a~a" *layers-src-dir* "nrev.ins")))
     ;; jc-reverb from CLM

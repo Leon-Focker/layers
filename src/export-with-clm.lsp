@@ -45,16 +45,10 @@
 
 (in-package :clm)
 
-(let ((file "/home/leon/lisp/edwards/samp1.ins"))
-  (if (probe-file file)
-      (load (compile-file file))
-      (error "~&~a not found, please replace with your path to Michael Edwards~
-              samp1 instrument" file)))
-
-;; *** calls-to-samp1
+;; *** calls-to-samp0
 ;;; this is a helper function for layers-to-clm
 ;;; it can call itself recursively, which is why it needed to be seperate
-(defun calls-to-samp1 (calls ids)
+(defun calls-to-samp0 (calls ids)
     (loop for call in calls and i from 0 do
 	 (when (and (member (first call) ids)
 		    (not (equal (pathname-name (nth 2 call)) "rest")))
@@ -72,14 +66,14 @@
 		    (loop-flag (nth 8 call))
 		    (call-again (and loop-flag (> dur max-dur)))
 		    (panorama (nth 9 call)))
-	       ;; samp1 would reverse the sound, not just loop it - that's why
+	       ;; samp0 would reverse the sound, not just loop it - that's why
 	       ;; sounds that are supposed to loop have to be called again:
 	       (when call-again
-		 (calls-to-samp1 (list (list id (+ time max-dur) file (- dur max-dur) 0
+		 (calls-to-samp0 (list (list id (+ time max-dur) file (- dur max-dur) 0
 					     0.01 decay amplitude loop-flag panorama))
 				 ids))
-	       ;; call to samp1:
-	       (samp1 file
+	       ;; call to samp0:
+	       (samp0 file
 		      time
 		      :duration duration
 		      :start start
@@ -109,7 +103,7 @@
 	         :output (concatenate 'string
 				      ly::*default-sample-dir*
 				      "layers.wav"))
-      (calls-to-samp1 calls ids))))
+      (calls-to-samp0 calls ids))))
 
 (in-package :ly)
 
