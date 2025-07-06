@@ -20,7 +20,7 @@
 (defparameter *load-risky-files* nil) ;; load clm and sketch,creates warnings :(
 (defparameter *print-to-console* nil)
 (defparameter *cloud-radius* .3)
-(defparameter *layers* (make-layers 'nil nil)) ;; should contain the current layers-object
+(defparameter *layers* nil) ;; should contain the current layers-object
 
 ;; *** not for user (back end)
 (defparameter *all-layers* '()) ;; list with all layers objects that were called
