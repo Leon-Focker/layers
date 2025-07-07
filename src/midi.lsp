@@ -309,4 +309,43 @@
 				 (pathname-name midi-file)
 				 "-deconstructed.mid"))))
 
+;; *** midi-file-to-env
+
+;;; convert a midi file into a pair of x-y breakpoints. The start-time of the
+;;; first note corresponds to the first x-value (0). The start-time of the last
+;;; note corresponds to the last x-value (100).
+;;; The midi keynum values correspond to the y-values. The lowest one will be 0,
+;;; the highest 1.
+(defun midi-file-to-env (file &optional track)
+  (let ((lists (midi-file-to-list file track))
+	first
+	last
+	lowest
+	highest
+	(x-values '())
+	(y-values '()))
+    ;; sort by start-time
+    (setf lists (sort lists #'(lambda (x y) (< (first x) (first y)))))
+    ;; init all missing variables
+    (loop for event in lists
+	  for time = (first event)
+	  for key = (second event)
+	  minimize time into t-min
+	  maximize time into t-max
+	  minimize key into k-min
+	  maximize key into k-max
+	  do (push time x-values)
+	     (push key y-values)
+	  finally (setf first t-min
+			last t-max
+			lowest k-min
+			highest k-max))
+    (reverse
+     (loop for x in x-values and y in y-values
+	   ;; in reverse, because we reverse again in the end
+	   collect (rescale y lowest highest 0 1)
+	   collect (rescale x first last 0 100)))))
+
+(setf (symbol-function 'midi-to-env) #'midi-file-to-env)
+
 ;; EOF midi.lsp
