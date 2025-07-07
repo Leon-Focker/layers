@@ -629,8 +629,20 @@
 		and env in list-of-envelopes and i from 0
 		do (when (> i 0) (setf s (+ s .0001)))
 		collect (scale-env env 1 :first-x s :last-x e)))
-    (flatten list-of-envelopes)))    
+    (flatten list-of-envelopes)))
 
+;; *** rescale-env
+;;; rescale all y-values of an envelope using rescale
+(defun rescale-env (env new-y-min new-y-max)
+  (loop for y in (cdr env) by #'cddr
+	minimize y into old-min
+	maximize y into old-max
+	finally
+	   (return
+	     (loop for x in env by #'cddr and y in (cdr env) by #'cddr
+		   collect x
+		   collect (rescale y old-min old-max new-y-min new-y-max)))))
+  
 ;; *** flatness-of-list
 ;;; this might not be useful at all for anything but spectra (spectral flatnes)
 (defun flatness-of-list (ls)
