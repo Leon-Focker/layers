@@ -110,7 +110,7 @@
 		  "stored-file.lsp"
 		  "stored-file-list.lsp"
 		   "layer.lsp"
-		 "layers.lsp"
+		  "layers.lsp"
 		  ))
     (load-layers-src-file file)))
 (load-all)
