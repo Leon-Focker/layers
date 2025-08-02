@@ -5,7 +5,7 @@
 
 ;; *** layers
 ;;; new class layers, which represents the whole piece
-(defclass layers (list-object)
+(defclass layers (list-thingy)
   ())
 
 ;;; *layers* can only be an object of type layers

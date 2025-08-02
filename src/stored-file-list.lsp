@@ -5,7 +5,7 @@
 
 ;; *** stored-file-list
 ;;; list of stored files, no doubles
-(defclass stored-file-list (list-object)
+(defclass stored-file-list (soundpile)
   ;; this helps to switch sfls dependant on the next play-length
   ((length-min :accessor length-min :initarg :length-min :initform 0)
    (length-max :accessor length-max :initarg :length-max :initform 100)
@@ -35,7 +35,7 @@
 ;; *** subordinate-stored-file-list
 ;;; only contains a list of stored-files and its probability weight
 ;;; designed for one time use, eg. (result of get-sub-list-of-closest)
-(defclass subordinate-stored-file-list (list-object)
+(defclass subordinate-stored-file-list (list-thingy)
   ())
 
 ;; *** make-subordinate-stored-file-list
@@ -56,20 +56,6 @@
 		  weights)
 	 ids)))
 
-;; *** get-ids
-;;; get ids of all stored-files in stored-file-list
-(defmethod get-ids ((sfl stored-file-list))
-  (loop for sf in (data sfl) collect
-       (get-id sf)))
-
-;; *** get-all
-;;; gets list of all values in a slot of the stored-file ins stored-file-list
-(defmethod get-all (slot (sfl stored-file-list) &optional error)
-  (loop for sf in (data sfl)
-     do (when (and (not (funcall slot sf)) error)
-	  (error "get-all found no value for ~a in sf ~a" slot (id sf)))
-     collect (funcall slot sf)))
-
 ;; *** get-coordinates
 ;;; get coordinates of all stored-files in stored-file-list as '((x1 y1 z1 )...)
 (defmethod get-coordinates ((sfl stored-file-list))
@@ -78,11 +64,6 @@
 	  (error "In get-coordinates, not all coordinates were given for sf: ~a"
 		 (id sf)))
      collect (list (x sf) (y sf) (z sf))))
-
-;; *** get-paths
-;;; show all paths to all sounds on the sfl
-(defmethod get-paths ((sfl stored-file-list))
-  (loop for p in (data sfl) collect (path p)))
 
 ;; *** get-sub-list-of-closest
 ;;; get a list of soundfiles which are close to current position in x,y,z
@@ -134,25 +115,11 @@
 ;;; stores a stored-file object in a stored-file-list, when its id is unique
 (defmethod store-file-in-list ((sf stored-file) (sfl stored-file-list)
 			       &key (warn-if-double t))
-  (if (null (data sfl))
-      (setf (data sfl) (list sf))
-      (let* ((double (member (id sf)
-			     (get-ids sfl))))
-	(if double
-	    (progn
-	      (when warn-if-double
-		(warn (format nil "the id ~a is already in the sfl ~a ~
-                                   and will be replaced"
-			      (get-id sf) (get-id sfl))))
-	      (setf (data sfl)
-		    (remove-nth (- (length (data sfl))
-				   (length double))
-				(data sfl)))
-	      (push sf (data sfl)))
-	    (push sf (data sfl)))))
+  (add-to-pile sf sfl :warn-if-double warn-if-double)
   (unless (last-played sfl) (setf (last-played sfl) sf)))
 
 ;; *** folder-to-stored-file-list
+;; TODO this should use lyu::from-folder
 ;;; bunch-add all soundfiles in a folder to a stored-file-list
 ;;; auto-map - analyzes and maps the file automatically in a x y z space
 ;;; f1, f2, f3 are the mapping functions for x y z, leave them nil for default
@@ -179,7 +146,7 @@
 					 loop-flag
 					 (path-to-folder ""))
   (let* ((dir (format nil "~a~a" path-to-folder folder))
-	 (files (sc::get-sndfiles dir))
+	 (files (lyu::get-sndfiles dir))
 	 (names (loop for i in files collect (pathname-name i)))
 	 (ids '()))
     (when (null files) (warn "no soundfiles found in ~a" dir))
@@ -272,7 +239,30 @@
 	 (warn "~&found x, y or z value that is not in bounds 0 - 1 in sfl ~a"
 	       (get-id sfl)))))
 
+;; *** check-sanity
+(defmethod check-sanity ((sfl stored-file-list) &optional (error-fun #'warn))
+  (unless
+      (loop for sf in (data sfl)
+	    always (and (equal (type-of sf) 'stored-file)
+			(check-sanity sf error-fun)))
+    (funcall error-fun "check-sanity: not all elements of sfl ~a are ~
+                        sane stored-files!"
+	     (id sfl)))
+  (loop for slot in '(length-min length-max) do
+    (unless (and (numberp (funcall slot sfl)) (<= 0 (funcall slot sfl)))
+      (funcall error-fun "weird ~a for stored-file ~a" slot (id sfl))))
+  (loop for slot in '(sfl-when-longer sfl-when-shorter) do
+    (unless (or (not (funcall slot sfl))
+		(equal (type-of (funcall slot sfl)) 'stored-file-list)
+		(funcall error-fun "weird ~a for stored-file ~a" slot (id sfl)))))
+  (loop for slot in '(last-played) do
+    (unless (or (not (funcall slot sfl))
+		(equal (type-of (funcall slot sfl)) 'stored-file)
+		(funcall error-fun "weird ~a for stored-file ~a" slot (id sfl)))))
+  t)
+
 ;; *** make-load-form
+;; TODO
 (defmethod make-load-form ((sfl stored-file-list) &optional environment)
   (declare (ignore environment))
   `(make-instance 'stored-file-list
@@ -287,33 +277,12 @@
 		  ;;:last-played ',(last-played sfl)
 		  ))
 
-;; *** check-sanity
-(defmethod check-sanity ((sfl stored-file-list) &optional (error-fun #'warn))
-  (unless
-      (loop for sf in (data sfl)
-	    always (and (equal (type-of sf) 'stored-file)
-			(check-sanity sf error-fun)))
-    (funcall error-fun "not all elements of sfl ~a are sane stored-files"
-	     (id sfl)))
-  (loop for slot in '(length-min length-max) do
-    (unless (and (numberp (funcall slot sfl)) (<= 0 (funcall slot sfl)))
-      (funcall error-fun "werid ~a for stored-file ~a" slot (id sfl))))
-  (loop for slot in '(sfl-when-longer sfl-when-shorter) do
-    (unless (or (not (funcall slot sfl))
-		(equal (type-of (funcall slot sfl)) 'stored-file-list)
-		(funcall error-fun "werid ~a for stored-file ~a" slot (id sfl)))))
-  (loop for slot in '(last-played) do
-    (unless (or (not (funcall slot sfl))
-		(equal (type-of (funcall slot sfl)) 'stored-file)
-		(funcall error-fun "werid ~a for stored-file ~a" slot (id sfl)))))
-  t)
-
 ;; *** store-in-text-file
 ;;; store a sfl in a text file, so the analysis can be skipped by reading in
 ;;; the soundfiles.
 (defmethod store-in-text-file ((sfl stored-file-list) &optional file)
   (let* ((file (or file (format nil "~a~a-load-file.txt" *src-dir* (id sfl)))))
-    (sc::write-to-file file (make-load-form sfl))
+    (write-to-file file (make-load-form sfl))
     (format t "~&wrote ~a into ~a" (id sfl) file)))
 
 ;;;; EOF stored-file-list.lsp

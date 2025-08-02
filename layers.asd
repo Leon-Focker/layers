@@ -4,7 +4,7 @@
   :description "generative music library"
   :author "Leon Focker"
   :license "GNU General Public License v3.0"
-  :depends-on (:cl-pcg :imago) ;(:clm :slippery-chicken)
+  :depends-on (:layers-utils)
   :serial t
   :components ((:file "src/all")))
 

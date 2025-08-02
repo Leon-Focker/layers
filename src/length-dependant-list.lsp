@@ -6,7 +6,7 @@
 ;; *** length-dependant-list
 ;;; list of pairs of soundfile-ids and allocated lengths
 ;;; -> the length of the currently played soundfile decides the next file
-(defclass length-dependant-list (list-object)
+(defclass length-dependant-list (list-thingy)
   ())
 
 ;; *** make-length-dependant-list

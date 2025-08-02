@@ -5,7 +5,7 @@
 
 ;; *** markov-list
 ;;; list of pairs of soundfile-ids and allocated relative odds
-(defclass markov-list (list-object)
+(defclass markov-list (list-thingy)
   ())
 
 ;; *** make-markov-list

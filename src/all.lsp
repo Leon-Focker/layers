@@ -13,7 +13,6 @@
 ;;;; (changing position in coordinate space in Pd, needs function that slowly adjusts
 ;;;;   position (moving average?) as to not jump to a new position)
 ;;;;  -> smoothing factor adjustable in pd
-;;;; while analysing soundfile, find better way to determine transients?
 ;;;; when a layer is triggered (even though the remaining-time is > 0.01) by next-trigger
 ;;;;  and trigger-all is t, it should not start at the begining of the sample but rather skipp
 ;;;;  the already played part. -> tried to implement but is bugged, see #'next-trigger
@@ -44,33 +43,27 @@
 
 ;;;; indispensibility for live - compare to higher n
 
-;;;; tests for midi.lsp, check if some already are in utils?
-
-;;;; Look at sc::import-audio
-
-;;;; CLM file->array etc. could replace some instruments??
-
 ;;;; Export with clm still uses samp1
 
 (in-package :cl-user)
 
-;; ** Dependencies
+;; ;; ** Dependencies
 
-(unless (and (find-package 'slippery-chicken) (find-package 'clm))
-  (error "slippery chicken and clm need to be installed and loaded for layers ~
-          to work..."))
+;; (unless (and (find-package 'slippery-chicken) (find-package 'clm))
+;;   (error "slippery chicken and clm need to be installed and loaded for layers ~
+;;           to work..."))
 
-(unless (find-package :cl-pcg)
-  (handler-case
-      (ql:quickload :cl-pcg)
-    (error (condition)
-      (error "please make sure that the cl-pcg library is installed correctly"
-	     ))))
+;; (unless (find-package :cl-pcg)
+;;   (handler-case
+;;       (ql:quickload :cl-pcg)
+;;     (error (condition)
+;;       (error "please make sure that the cl-pcg library is installed correctly"
+;; 	     ))))
 
 ;; ** Package
 
 (defpackage :layers
-  (:use :common-lisp :slippery-chicken)
+  (:use :common-lisp :layers-utils)
   (:nicknames :ly))
 
 (defun ly () (in-package :layers))
@@ -86,87 +79,64 @@
 
 (defparameter *src-dir* *layers-src-dir*)
 
+(defun parent-dir (path)
+  (subseq path 0 (position #\/ path :from-end t)))
+
 (defun load-layers-src-file (file)
   (load (format nil "~a~a" *layers-src-dir* file)))
 
 ;; ** Load
 
-(defun quiet-warning-handler (c)
-  (let ((r (find-restart 'muffle-warning c)))
-    (when r 
-      (invoke-restart r))))
-
-;; clm makes a lot of annoying warnings :c
-(when (ignore-errors clm::*clm*)
-  (handler-bind ((warning
-		  #'quiet-warning-handler))
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "analysis.lsp")))
-    ;; Michael Edwards samp1 instrument, but you can select the input channel:
-    ;; It would also be possible to use samp5 (slippery chicken).
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "samp0.ins")))
-    ;; nrev from CLM
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "nrev.ins")))
-    ;; jc-reverb from CLM
-    ;;(load (compile-file (format nil "~a~a" *layers-src-dir* "jcrevf.ins")))
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "jcrev.ins")))))
-
-(import '(clm::with-sound
-	  clm::with-mix
-	  clm::sound-let
-	  clm::mix
-	  clm::*CLM-MIX-CALLS*
-	  clm::*CLM-MIX-OPTIONS*
-	  clm::add-soundq
-	  clm::samp0
-	  clm::nrev
-	  clm::jc-reverb))
+;; (import '(clm::with-sound
+;; 	  clm::with-mix
+;; 	  clm::sound-let
+;; 	  clm::mix
+;; 	  clm::*CLM-MIX-CALLS*
+;; 	  clm::*CLM-MIX-OPTIONS*
+;; 	  clm::add-soundq
+;; 	  clm::samp0
+;; 	  clm::nrev
+;; 	  clm::jc-reverb))
 
 ;;; load all .lsp files
 (defun load-all ()
   (dolist (file '("globals.lsp"
 		  "utilities.lsp"
-		  "base-object.lsp"
 		  "random.lsp"
-		  "list-object.lsp"
 		  "markov.lsp"
 		  "length-dependant-list.lsp"
-		  "generate-structure.lsp"
 		  "structure.lsp"
 		  "list-of-durations.lsp"
 		  "stored-file.lsp"
 		  "stored-file-list.lsp"
-		  "layer.lsp"
-		  "layers.lsp"
-		  "morph.lsp"
-		  "midi.lsp"
-		  "transitions.lsp"
-		  "fplay.lsp"
+		   "layer.lsp"
+		 "layers.lsp"
 		  ))
     (load-layers-src-file file)))
 (load-all)
 
-(when (ignore-errors clm::*clm*)
-  (handler-bind ((warning
-		  #'quiet-warning-handler))
-    (load (compile-file (format nil "~a~a" *layers-src-dir* "export-with-clm.lsp")))))
+;; (when (ignore-errors clm::*clm*)
+;;   (handler-bind ((warning
+;; 		  #'quiet-warning-handler))
+;;     (load (compile-file (format nil "~a~a" *layers-src-dir* "export-with-clm.lsp")))))
 
 ;; **** Tests
 
 ;; to load the test suite, load ".../tests/layers-test-suite.lsp"
 ;; then (ly-test-test-all)
 
-;; *** export symbols
-(let ((pack (find-package :layers)))
-  (do-all-symbols (sym pack)
-    ;; these are most of the symbol names that are also found in sc, but since
-    ;; we now use sc in the layers package there should be no clashing...
-    #|(unless (member sym '(id duration data name total get-next rhythms path
-    value this minimum pitch scale env centroid visualize ;
-    double tempo))|#
-    (when (eql (symbol-package sym) pack) (export sym)))) ;)
+;; ;; *** export symbols
+;; (let ((pack (find-package :layers)))
+;;   (do-all-symbols (sym pack)
+;;     ;; these are most of the symbol names that are also found in sc, but since
+;;     ;; we now use sc in the layers package there should be no clashing...
+;;     #|(unless (member sym '(id duration data name total get-next rhythms path
+;;     value this minimum pitch scale env centroid visualize ;
+;;     double tempo))|#
+;;     (when (eql (symbol-package sym) pack) (export sym)))) ;)
 
-;; export some symbols that are not exported because they are already in sc etc.
-(loop for sym in '(data duration) do (export sym))
+;; ;; export some symbols that are not exported because they are already in sc etc.
+;; (loop for sym in '(data duration) do (export sym))
 
 (format t "~&finished loading layers!")
 

@@ -6,7 +6,7 @@
 ;; *** class
 ;;; a structure is a list of list-of-durations, for the l-o-d, we choose one
 ;;; of those lists
-(defclass list-of-durations (list-object)
+(defclass list-of-durations (list-thingy)
   ((structure :accessor structure :initarg :structure :initform nil)))
 
 ;; *** make-list-of-durations
